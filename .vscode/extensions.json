@@ -1,0 +1,7 @@
+{
+    "recommendations": [
+        "sumneko.lua",
+        "koihik.vscode-lua-format",
+        "zxh404.vscode-proto3"
+    ]
+}
