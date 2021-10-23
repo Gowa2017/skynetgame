@@ -1,3 +1,4 @@
 proto.pb
 proto.lua
 protoc.lua
+public/proto/test.lua
