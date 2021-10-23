@@ -21,4 +21,6 @@ preload     = root .. "lualib/preload.lua" --preload can define SERVICE_DESC = t
 --- 必须在一个叫做 conf.message 的模块中定义消息，放在哪里不重要，只要 require 能找到就行
 logLevel    = 0    -- 日志级别 0 all，1 debug 2 info 3 warning 4 error 5 critical，级别越高打印的日志越少
 dev         = true -- 暂时无用
+protoFile   = 'public/proto/proto.pb'
+protoMap    = 'public/proto/protomap.lua'
 -- LuaFormatter on
