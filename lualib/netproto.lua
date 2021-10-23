@@ -11,26 +11,6 @@ local M            = {}
 local pb           = require("pb")
 local protomap    
 
-local function getfield(T, k)
-  local v = T
-  for w in string.gmatch(k, "[%a_][%w_]*") do
-    v = v[w]
-    if not v then return v end
-  end
-  return v
-end
-local function setfield(T, k, v)
-  local base = T
-  for w, d in string.gmatch(k, "([%a_][%w_]*)(%.?)") do
-    if d == "." then -- not last item
-      base[w] = base[w] or {}
-      base = base[w]
-    else
-      base[w] = v
-    end
-  end
-end
-
 ---@param protoFile? string pb二进制文件路径
 ---@param protoDef? string 协议号定义文件
 function M.init(protoFile, protoDef)
@@ -51,22 +31,22 @@ end
 ---而此，就直接对应了服务内对应的处理的模块和方法
 ---@param iType number @协议号
 ---@return string, string
-function M.c2sbyid(iType) return tunpack(protomap.c2sbyid[iType]) end
+function M.c2sbyid(iType) return protomap.c2sbyid[iType] end
 
 --- 通过协议ID查找到服务端到客户端的协议定义信息
 ---@param iType number @协议号
 ---@return string,string
-function M.s2cbyid(iType) return tunpack(protomap.s2cbyid[iType]) end
+function M.s2cbyid(iType) return protomap.s2cbyid[iType] end
 
 --- 查找客户端到服务端协议名的 ID
 ---@param sName string @协议名
 ---@return number 协议号
-function M.c2sbyname(sName) return getfield(protomap, sName) end
+function M.c2sbyname(sName) return protomap.c2s[sName] end
 
 --- 查找服务端到客户端协议名的 ID
 ---@param sName string @协议名
 ---@return number @协议号
-function M.s2cbyname(sName) return getfield(protomap, sName) end
+function M.s2cbyname(sName) return protomap.s2c[sName] end
 
 ---根据 protobuf 协议名来序列化数据
 ---* 首先会找到协议号，然后把协议号放在数据前面
@@ -91,13 +71,13 @@ end
 function M.unpack(msg, sz)
   local s             = skynet.tostring(msg, sz)
   local iProtoId      = sunpack(">I2", s)
-  local grp, cmd      = M.c2sbyid(iProtoId)
-  assert(cmd, sfmt("proto %d not fuond", iProtoId))
-  local mData, errMsg = pb.decode("c2s." .. grp .. "." .. cmd, s:sub(3))
+  local cmd           = M.c2sbyid(iProtoId)
+  assert(cmd, sfmt("protoId %d not fuond", iProtoId))
+  local mData, errMsg = pb.decode(cmd, s:sub(3))
   if mData then
-    return table.concat({ grp, cmd }, "."), mData
+    return cmd:sub(5), mData
   else
-    return error(errMsg)
+    error(errMsg)
   end
 end
 

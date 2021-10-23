@@ -91,15 +91,19 @@ local function genProtoMap()
     c2s = math.max(table.unpack(tablex.keys(def.c2sbyid)) or 20000),
   }
 
+  --- 这个 MAP 应该是一个平坦的映射，从消息类型到ID的映射，或从消息ID到消息类型的映射
+  --- 键应该是 package.消息名的形式，强制要求，报名必须是 s2c.login  s2c.game 的形式
+  --- 的消息类型， 报名必须只能包含字母和 '.' 号，消息名只能是数字和字母
   for name, _, _ in pb.types() do
     local ttype, grp, message = name:match(".(%w+).(%w+).([%w%d]+)")
     local byid                = ttype .. "byid"
-    if not def[byid] then def[byid] = {} end
-    if not getfield(def, name) then
+    def[ttype] = def[ttype] or {}
+    def[byid] = def[byid] or {}
+    if not def[ttype][name:sub(2)] then
       local id = seq[ttype] + 1
       seq[ttype] = id
-      setfield(def, name:sub(2), id)
-      def[byid][id] = { grp, message }
+      def[ttype][name:sub(2)] = id
+      def[byid][id] = name:sub(2)
     end
   end
 
