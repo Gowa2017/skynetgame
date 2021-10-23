@@ -5,7 +5,7 @@ local pbio           = require("pb.io")
 
 local protoFile      = "proto.pb"
 local protoClassFile = "proto.lua"
-local protoMapFile   = "../../lualib/conf/protomap.lua"
+local protoMapFile   = "protomap.lua"
 local data           = assert(pbio.read(protoFile))
 local ok, n          = pb.load(data)
 assert(ok, n)
@@ -27,7 +27,7 @@ local typeConv       = {
   bytes    = "string",
   string   = "string",
   message  = "table",
-  enum     = "string" -- affect by enum_as_name or  enum_as_value
+  enum     = "string", -- affect by enum_as_name or  enum_as_value
 }
 
 local function genProtoClass()
@@ -57,9 +57,7 @@ local function getfield(T, k)
   local v = T -- start with the table of globals
   for w in string.gmatch(k, "[%a_][%w_]*") do
     v = v[w]
-    if not v then
-      return v
-    end
+    if not v then return v end
   end
   return v
 end
@@ -81,12 +79,8 @@ end
 
 local function genProtoMap()
   local ok, err = loadfile(protoMapFile, "bt")
-  local def     = ok and ok() or {
-    s2c     = {},
-    c2s     = {},
-    c2sbyid = {},
-    s2cbyid = {}
-  }
+  local def     = ok and ok() or
+                    { s2c     = {}, c2s     = {}, c2sbyid = {}, s2cbyid = {} }
 
   local tablex  = require("pl.tablex")
   local plfile  = require("pl.file")
@@ -94,15 +88,13 @@ local function genProtoMap()
 
   local seq     = {
     s2c = math.max(table.unpack(tablex.keys(def.s2cbyid)) or 10000),
-    c2s = math.max(table.unpack(tablex.keys(def.c2sbyid)) or 20000)
+    c2s = math.max(table.unpack(tablex.keys(def.c2sbyid)) or 20000),
   }
 
   for name, _, _ in pb.types() do
     local ttype, grp, message = name:match(".(%w+).(%w+).([%w%d]+)")
     local byid                = ttype .. "byid"
-    if not def[byid] then
-      def[byid] = {}
-    end
+    if not def[byid] then def[byid] = {} end
     if not getfield(def, name) then
       local id = seq[ttype] + 1
       seq[ttype] = id
