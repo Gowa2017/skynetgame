@@ -1,0 +1,17 @@
+syntax = "proto3";
+package c2s.login;
+
+message Handshake {
+  uint32 time = 1;
+  string key = 2;
+}
+
+message Auth {
+  string hash = 1;
+}
+
+message Login {
+  string username = 1;
+  string password = 2;
+  uint32 channel = 3;
+}

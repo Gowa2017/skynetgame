@@ -35,6 +35,7 @@ libs: $(LUACLIB_TARGET)
 
 $(LUACLIB_DIR)/pb.so: 3rd/lua-protobuf/pb.c
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ $(LDFLAGS)
+	install 3rd/lua-protobuf/protoc.lua public/proto
 $(LUACLIB_DIR)/protobuf.so: 3rd/pbc/binding/lua53/pbc-lua53.c
 	$(MAKE) -C 3rd/pbc
 	$(CC) $(CFLAGS) $(SHARED) -o $@ -I3rd/pbc -I$(LUAINC) -L3rd/pbc/build  -lpbc

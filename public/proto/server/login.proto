@@ -1,0 +1,20 @@
+syntax = "proto3";
+package s2c.login;
+
+message Challenge {
+  uint32 time = 1;
+  string challenge = 2;
+}
+
+message Key {
+  string key = 1;
+}
+
+message HandshakeOK {
+  uint32 code = 1;
+  string errmsg = 2;
+}
+
+message LoginOK {
+  string token = 1;
+}
