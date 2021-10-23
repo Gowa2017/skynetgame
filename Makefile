@@ -25,6 +25,7 @@ all: engine go libs
 
 engine:
 	make -C $(SKYNETDIR) $(PLAT)
+	install $(SKYNETDIR)/3rd/lua/lua  .
 go:
 	make -C skynetgo LUAINC=`pwd`/$(LUAINC)
 
