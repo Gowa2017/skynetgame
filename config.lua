@@ -23,4 +23,5 @@ logLevel    = 0    -- 日志级别 0 all，1 debug 2 info 3 warning 4 error 5 cr
 dev         = true -- 暂时无用
 protoFile   = 'public/proto/proto.pb'
 protoMap    = 'public/proto/protomap.lua'
+daobiao     = 'public/daobiao/server.lua'
 -- LuaFormatter on
