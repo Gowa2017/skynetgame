@@ -2,6 +2,9 @@ local login       = require "snax.loginserver"
 local crypt       = require "skynet.crypt"
 local skynet      = require "skynet"
 local cluster     = require("skynet.cluster")
+local service     = require("go.service")
+
+service.enableMessage("db")
 
 local server      = {
   host       = "127.0.0.1",
@@ -21,6 +24,12 @@ function server.auth_handler(token)
   server = crypt.base64decode(server)
   password = crypt.base64decode(password)
   assert(password == "password", "Invalid password")
+  local ok                     = skynet.call(".accdb", "db", "findOne", "users",
+                                             {
+    username = user,
+    password = password,
+  }, { uid = true })
+  if not ok then error("User does not exists") end
   return server, user
 end
 
