@@ -24,5 +24,5 @@ dev         = true -- 暂时无用
 protoFile   = 'public/proto/proto.pb'
 protoMap    = 'public/proto/protomap.lua'
 daobiao     = 'public/daobiao/server.lua'
-mode        = 'game'
+mode        = 'G'
 -- LuaFormatter on

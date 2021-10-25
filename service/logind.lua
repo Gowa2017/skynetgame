@@ -1,75 +1,63 @@
-local skynet  = require("skynet")
-local LOG     = require("go.logger")
+local login       = require "snax.loginserver"
+local crypt       = require "skynet.crypt"
+local skynet      = require "skynet"
+local cluster     = require("skynet.cluster")
 
---- 接收控制指令,主要接收：网关启动事件，slave 发过来关闭指令
-local CMD     = {}
---- 接收套接字事件
-local SOCKET  = {}
---- gatserver
-local gate   
---- 套接字ID到认证服务映射
-local agent   = {}
---- 认证服务表
-local slave   = {}
---- 认证服务分派ID
-local balance = 1
+local server      = {
+  host       = "127.0.0.1",
+  port       = 8001,
+  multilogin = false, -- disallow multilogin
+  name       = "login_master",
+}
 
----当套接字关闭或者出错的时候，就会执行
----当 slave 发送 close 命令的时候也会执行
----通知网关关闭套接字
----通知 slave 套接字已关闭
----@param fd number
-local function close_agent(fd)
-  local a = agent[fd]
-  agent[fd] = nil
-  if a then
-    skynet.call(gate, "lua", "kick", fd)
-    -- disconnect never return
-    skynet.send(a, "lua", "disconnected", fd)
+local server_list = {}
+local user_online = {}
+local user_login  = {}
+
+function server.auth_handler(token)
+  -- the token is base64(user)@base64(server):base64(password)
+  local user, server, password = token:match("([^@]+)@([^:]+):(.+)")
+  user = crypt.base64decode(user)
+  server = crypt.base64decode(server)
+  password = crypt.base64decode(password)
+  assert(password == "password", "Invalid password")
+  return server, user
+end
+
+function server.login_handler(server, uid, secret)
+  print(string.format("%s@%s is login, secret is %s", uid, server,
+                      crypt.hexencode(secret)))
+  local gameserver = assert(server_list[server], "Unknown server")
+  -- only one can login, because disallow multilogin
+  local last       = user_online[uid]
+  if last then skynet.call(last.address, "lua", "kick", uid, last.subid) end
+  if user_online[uid] then
+    error(string.format("user %s is already online", uid))
+  end
+
+  local subid      = tostring(skynet.call(gameserver, "lua", "login", uid,
+                                          secret))
+  user_online[uid] = { address = gameserver, subid   = subid, server  = server }
+  return subid
+end
+
+local CMD         = {}
+
+function CMD.register_gate(server)
+  server_list[server:match("^.*@(.*)")] = cluster.proxy(server)
+end
+
+function CMD.logout(uid, subid)
+  local u = user_online[uid]
+  if u then
+    print(string.format("%s@%s is logout", uid, u.server))
+    user_online[uid] = nil
   end
 end
 
-function SOCKET.open(fd, addr)
-  local s = slave[balance]
-  balance = balance + 1
-  if balance > #slave then balance = 1 end
-  agent[fd] = s
-  LOG.info("New connection: %d,%s --> %s", fd, addr, skynet.address(s))
-  skynet.send(s, "lua", "connected", fd, addr, gate)
+function server.command_handler(command, ...)
+  local f = assert(CMD[command])
+  return f(...)
 end
 
-function SOCKET.close(fd)
-  LOG.info("socket close %d", fd)
-  close_agent(fd)
-end
-
-function SOCKET.error(fd, msg)
-  LOG.error("socket error %d: %s", fd, msg)
-  close_agent(fd)
-end
-
-function SOCKET.warning(fd, size)
-  -- size K bytes havn't send out in fd
-  LOG.warning("socket warning: %d, %d", fd, size)
-end
-
-function SOCKET.data(fd, msg) assert(agent[fd], "no connections") end
-
-function CMD.start(conf)
-  local n = conf.slave or 8
-  for i = 1, n do
-    local s = skynet.newservice("auth", i)
-    slave[#slave + 1] = s
-    skynet.call(s, "lua", "start", skynet.self(), gate)
-  end
-  skynet.call(gate, "lua", "open", conf)
-end
-
-function CMD.close(fd)
-  LOG.info("CMD:close %d", fd)
-  close_agent(fd)
-end
-
-local service = require("go.service")
-service.setMessageCmds("lua", { socket = SOCKET, cmd    = CMD }, true, false)
-service.start(function() gate = skynet.newservice("gate") end)
+login(server)
