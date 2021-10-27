@@ -5,8 +5,8 @@ local cluster    = require("skynet.cluster")
 
 skynet.start(function()
   local mode = skynet.getenv "mode"
+  if mode then cluster.open(mode) end
   if mode == "G" then
-    cluster.open(mode)
     sharetable.loadfile(skynet.getenv("daobiao"))
 
     skynet.newservice("debug_console", 7001)
@@ -15,13 +15,15 @@ skynet.start(function()
     cluster.register("sample", gate)
     skynet.call(gate, "lua", "open",
                 { port       = 8888, maxclient  = 64, servername = "sample" })
+    local t           = skynet.time()
+    skynet.newservice("agentpool")
+    print(skynet.time() - t)
 
   elseif mode == "L" then
     skynet.newservice("debug_console", 7002)
 
     local loginserver = skynet.newservice("logind")
     cluster.register("logind", loginserver)
-    cluster.open(mode)
 
     local db          = skynet.newservice("dbproxymongo")
     skynet.name(".accdb", db)
