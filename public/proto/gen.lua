@@ -86,11 +86,9 @@ local function genProtoMap()
   local plfile  = require("pl.file")
   local pretty  = require("pl.pretty")
 
-  local seq     = {
-    s2c = math.max(table.unpack(tablex.keys(def.s2cbyid)) or 10000),
-    c2s = math.max(table.unpack(tablex.keys(def.c2sbyid)) or 20000),
-  }
-
+  local seq     = {}
+  seq.s2c = math.max(10000, table.unpack(tablex.keys(def.s2cbyid)))
+  seq.c2s = math.max(20000, table.unpack(tablex.keys(def.c2sbyid)))
   --- 这个 MAP 应该是一个平坦的映射，从消息类型到ID的映射，或从消息ID到消息类型的映射
   --- 键应该是 package.消息名的形式，强制要求，报名必须是 s2c.login  s2c.game 的形式
   --- 的消息类型， 报名必须只能包含字母和 '.' 号，消息名只能是数字和字母
