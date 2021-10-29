@@ -1,3 +1,4 @@
+# GRID AOI.
 From cloudwu's aoi project, but add more feature.
 
 An area of size (X,Y) will divide into grids of size(x,y).
