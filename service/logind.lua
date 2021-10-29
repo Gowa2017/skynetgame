@@ -1,16 +1,19 @@
 local login       = require "snax.loginserver"
 local crypt       = require "skynet.crypt"
 local skynet      = require "skynet"
-local cluster     = require("skynet.cluster")
-local service     = require("go.service")
-
-service.enableMessage("db")
 
 local server      = {
   host       = "127.0.0.1",
   port       = 8001,
   multilogin = false, -- disallow multilogin
   name       = "login_master",
+}
+
+skynet.register_protocol {
+  id     = 101,
+  name   = "db",
+  pack   = skynet.pack,
+  unpack = skynet.unpack,
 }
 
 local server_list = {}
@@ -23,13 +26,14 @@ function server.auth_handler(token)
   user = crypt.base64decode(user)
   server = crypt.base64decode(server)
   password = crypt.base64decode(password)
-  assert(password == "password", "Invalid password")
+  -- assert(password == "password", "Invalid password")
   local ok                     = skynet.call(".accdb", "db", "findOne", "users",
-                                             {
-    username = user,
-    password = password,
-  }, { uid = true })
+                                             { username = user }, {
+    uid      = true,
+    password = true,
+  })
   if not ok then error("User does not exists") end
+  assert(password == ok.password, "Password mismath")
   return server, user
 end
 
@@ -52,8 +56,8 @@ end
 
 local CMD         = {}
 
-function CMD.register_gate(server)
-  server_list[server:match("^.*@(.*)")] = cluster.proxy(server)
+function CMD.register_gate(server, address)
+  server_list[server] = address
 end
 
 function CMD.logout(uid, subid)
