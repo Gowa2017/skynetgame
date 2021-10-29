@@ -68,17 +68,23 @@ function M.s2cbyname(sName)
   return protomap.s2c[sName]
 end
 
----根据 protobuf 协议名来序列化数据
----* 首先会找到协议号，然后把协议号放在数据前面
----* 然后以大端字节序进行打包，包头是消息的长度
+---Pack a message as a packge with 2byte length header
 ---@param sProtoName string @协议名
 ---@param data table @数据
 ---@return lightuserdata, number
 function M.pack(sProtoName, data)
+  return netpack.pack(M.packString(sProtoName, data))
+end
+
+---Pack a protbuf message as a string
+---@param sProtoName string
+---@param data table
+---@return string binary
+function M.packString(sProtoName, data)
   local iProtoId  = assert(M.s2cbyname(sProtoName),
                            sfmt("proto %s not found", sProtoName))
   local sPackData = pb.encode(sProtoName, data)
-  return netpack.pack(spack(">I2", iProtoId) .. sPackData)
+  return spack(">I2", iProtoId) .. sPackData
 end
 
 ---解包 协议ID + protobuf 序列化数据的 的字符串
@@ -90,14 +96,15 @@ end
 ---@return string @group 或错误消息
 ---@return string? cmd
 function M.unpack(msg, sz)
-  return M.unpackString(skynet.tostring(msg, sz))
+  if type(msg) ~= "string" then msg = netpack.tostring(msg, sz) end
+  return M.unpackString(msg)
 end
 
 function M.unpackString(msg)
   local iProtoId      = sunpack(">I2", msg)
   local cmd           = M.c2sbyid(iProtoId)
   assert(cmd, sfmt("protoId %d not fuond", iProtoId))
-  local mData, errMsg = pb.decode(cmd, s:sub(3))
+  local mData, errMsg = pb.decode(cmd, msg:sub(3))
   if mData then
     return cmd:sub(5), mData
   else
