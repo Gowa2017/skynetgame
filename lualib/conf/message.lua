@@ -7,7 +7,13 @@ return {
     name = "lua",
     --- skynet do it
   },
-  client = { id     = 3, name   = "client", unpack = netproto.unpack },
+  client = {
+    id     = 3,
+    name   = "client",
+    unpack = function(...)
+      return netproto.unpackString(skynet.tostring(...))
+    end,
+  },
   logic  = {
     id     = 100,
     name   = "logic",
