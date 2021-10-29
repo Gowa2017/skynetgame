@@ -4,3 +4,8 @@ package c2s.game;
 message Logon {
   string token = 1;
 }
+
+message Enter {
+  uint32 time = 1;
+  string msg = 2;
+}
