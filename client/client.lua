@@ -1,20 +1,49 @@
-local socket = require "client.socket"
-local skynet = require("skynet")
-local crypt  = require "client.crypt"
+local socket    = require "client.socket"
+local skynet    = require("skynet")
+local crypt     = require "client.crypt"
+
+local pb        = require("pb")
+local pbio      = require("pb.io")
+local protoFile = "public/proto/proto.pb"
+local protoMap  = "public/proto/protomap.lua"
+
+--- load pb file
+local ok, n     = pb.load(pbio.read(protoFile))
+assert(ok)
+--- load pb message id map
+local map       = loadfile(protoMap, "bt")()
 
 if _VERSION ~= "Lua 5.4" then error "Use lua 5.4" end
 
-local function writeline(fd, text) socket.send(fd, text .. "\n") end
+---write data with line break end
+local function writeline(fd, text)
+  socket.send(fd, text .. "\n")
+end
 
+---unpack a line from string
+---@param text string
+---@return string|nil #a line, or nil when not found a \n
+---@return string #remain test
 local function unpack_line(text)
   local from = text:find("\n", 1, true)
   if from then return text:sub(1, from - 1), text:sub(from + 1) end
   return nil, text
 end
 
-local last   = ""
+---used to save incomplete data
+local last      = ""
 
+---Used to unpack data from a socket
+---@param f fun() unpack function
+---@param id number socket fd
+---@return function # a closure return a message when called
 local function unpack_f(f, id)
+  ---Try to read message from socket, when remain data can unpack a message,
+  ---return it, or read all data from socket, then unpack.
+  ---@param fd number
+  ---@param last string
+  ---@return function
+  ---@return any
   local function try_recv(fd, last)
     local result
     result, last = f(last)
@@ -69,19 +98,41 @@ end
 
 ----- connect to game server
 
-local function send_request(v, session)
+---send a message to server
+---@param proto string proto name
+---@param v table message table
+---@param session number session id
+---@return string #protobuf encoded data
+---@return number #session id
+local function send_request(proto, v, session)
+  v = string.pack(">I2", map.c2s[proto]) .. pb.encode(proto, v)
   local size    = #v + 4
   local package = string.pack(">I2", size) .. v .. string.pack(">I4", session)
   socket.send(fd, package)
   return v, session
 end
 
+---decode mesage from data
+---@param v string data from socket
+---@return boolean #server return ok or not
+---@return table  #message
+---@return integer #sessionid
 local function recv_response(v)
-  local size                 = #v - 5
-  local content, ok, session = string.unpack("c" .. tostring(size) .. "B>I4", v)
+  local protoId, content, ok, session = string.unpack(
+                                          ">I2c" .. tostring(#v - 7) .. "B>I4",
+                                          v)
+  print(protoId, content, ok, session)
+
+  content = pb.decode("s2c.game.Scene", content)
+  local pretty                        = require("pl.pretty")
+  pretty.dump(content)
   return ok ~= 0, content, session
 end
 
+---unpack package from data, will delete the header length
+---@param text string
+---@return string #package data
+---@return string #remain data
 local function unpack_package(text)
   local size = #text
   if size < 2 then return nil, text end
@@ -115,7 +166,8 @@ local function game(token, result, secret)
   send_package(fd, handshake .. ":" .. crypt.base64encode(hmac))
 
   print(readpackage())
-  print("===>", send_request(text, 0))
+  print("===>",
+        send_request("c2s.game.Enter", { msg  = text, time = os.time() }, 0))
   -- don't recv response
   -- print("<===",recv_response(readpackage()))
 
@@ -137,8 +189,10 @@ local function game(token, result, secret)
   send_package(fd, handshake .. ":" .. crypt.base64encode(hmac))
 
   print(readpackage())
-  print("===>", send_request("fake", 0)) -- request again (use last session 0, so the request message is fake)
-  print("===>", send_request("again", 1)) -- request again (use new session)
+  print("===>",
+        send_request("c2s.game.Enter", { msg  = "fake", time = os.time() }, 0))
+  print("===>",
+        send_request("c2s.game.Enter", { msg  = "again", time = os.time() }, 1))
   print("<===", recv_response(readpackage()))
   print("<===", recv_response(readpackage()))
 
@@ -147,7 +201,7 @@ local function game(token, result, secret)
 
 end
 
-local CMD    = {}
+local CMD       = {}
 
 function CMD.start(user, password, server)
   local token = { user   = user, pass   = password, server = server }
@@ -156,5 +210,7 @@ function CMD.start(user, password, server)
 end
 
 skynet.start(function()
-  skynet.dispatch("lua", function(session, source, cmd, ...) CMD[cmd](...) end)
+  skynet.dispatch("lua", function(session, source, cmd, ...)
+    CMD[cmd](...)
+  end)
 end)
