@@ -6,7 +6,7 @@ message Handshake {
   string key = 2;
 }
 
-message Auth {
+message ChallengeResp {
   string hash = 1;
 }
 
@@ -14,4 +14,5 @@ message Login {
   string username = 1;
   string password = 2;
   uint32 channel = 3;
+  string server = 4;
 }

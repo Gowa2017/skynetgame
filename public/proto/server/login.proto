@@ -10,11 +10,8 @@ message Key {
   string key = 1;
 }
 
-message HandshakeOK {
+message Resp {
   uint32 code = 1;
   string errmsg = 2;
-}
-
-message LoginOK {
-  string token = 1;
+  string token = 3;
 }

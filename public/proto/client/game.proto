@@ -1,0 +1,6 @@
+syntax = "proto3";
+package c2s.game;
+
+message Logon {
+  string token = 1;
+}
