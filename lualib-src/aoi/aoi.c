@@ -6,14 +6,12 @@
 #include <stdlib.h>
 #include "aoi.h"
 
-#define AOI_RADIS 10.0f
-
 #define INVALID_ID (~0)
 #define PRE_ALLOC  16
-#define AOI_RADIS2 (AOI_RADIS * AOI_RADIS)
 #define DIST2(p1, p2)                                                          \
     ((p1[0] - p2[0]) * (p1[0] - p2[0]) + (p1[1] - p2[1]) * (p1[1] - p2[1]) +   \
      (p1[2] - p2[2]) * (p1[2] - p2[2]))
+#define POW2(x)      (x * x)
 #define MODE_WATCHER 1
 #define MODE_MARKER  2
 #define MODE_MOVE    4
@@ -36,8 +34,8 @@ struct object_set {
 
 struct pair_list {
     struct pair_list *next;
-    struct object    *watcher;
-    struct object    *marker;
+    struct object *   watcher;
+    struct object *   marker;
     int               watcher_version;
     int               marker_version;
 };
@@ -55,14 +53,18 @@ struct map {
 };
 
 struct aoi_space {
-    aoi_Alloc          alloc;
-    void              *alloc_ud;
-    struct map        *object;
-    struct object_set *watcher_static;
-    struct object_set *marker_static;
-    struct object_set *watcher_move;
-    struct object_set *marker_move;
-    struct pair_list  *hot;
+    aoi_Alloc   alloc;
+    float       aoi_radius; // radius
+    void *      alloc_ud;
+    struct map *object;
+    struct object_set
+        *watcher_static; // does not update positon in a tick, static
+    struct object_set
+        *marker_static; // does not update positon in a tick, static
+    struct object_set *watcher_move; // does update positon in a tick
+    struct object_set *marker_move;  // does update positon in a tick
+    struct pair_list * hot; // we will use this to deteminate whether to trigger
+                            // aoi message callback
 };
 
 static struct object *new_object(struct aoi_space *space, uint32_t id) {
@@ -74,6 +76,9 @@ static struct object *new_object(struct aoi_space *space, uint32_t id) {
     return obj;
 }
 
+/**
+ * Hash function，to find a slot of a map
+ **/
 static inline struct map_slot *mainposition(struct map *m, uint32_t id) {
     uint32_t hash = id & (m->size - 1);
     return &m->slot[hash];
@@ -81,10 +86,14 @@ static inline struct map_slot *mainposition(struct map *m, uint32_t id) {
 
 static void rehash(struct aoi_space *space, struct map *m);
 
+/**
+ * Insert a object into a map.
+ * Or need rehash the map.
+ **/
 static void map_insert(struct aoi_space *space,
-                       struct map       *m,
+                       struct map *      m,
                        uint32_t          id,
-                       struct object    *obj) {
+                       struct object *   obj) {
     struct map_slot *s = mainposition(m, id);
     if (s->id == INVALID_ID) {
         s->id  = id;
@@ -141,6 +150,10 @@ static void rehash(struct aoi_space *space, struct map *m) {
     space->alloc(space->alloc_ud, old_slot, old_size * sizeof(struct map_slot));
 }
 
+/**
+ * Query map's object by id, if not, create it.
+ * Or need extend the map.
+ **/
 static struct object *
 map_query(struct aoi_space *space, struct map *m, uint32_t id) {
     struct map_slot *s = mainposition(m, id);
@@ -225,9 +238,13 @@ static struct object_set *set_new(struct aoi_space *space) {
     return set;
 }
 
-struct aoi_space *aoi_create(aoi_Alloc alloc, void *ud) {
+/**
+ * Create a aoi_space object use custom memory alloc function
+ **/
+struct aoi_space *aoi_create(aoi_Alloc alloc, float dis, void *ud) {
     struct aoi_space *space = alloc(ud, NULL, sizeof(*space));
     space->alloc            = alloc;
+    space->aoi_radius       = dis;
     space->alloc_ud         = ud;
     space->object           = map_new(space);
     space->watcher_static   = set_new(space);
@@ -272,6 +289,9 @@ inline static void copy_position(float des[3], float src[3]) {
     des[2] = src[2];
 }
 
+/**
+ * Change a object's mode
+ **/
 static bool change_mode(struct object *obj, bool set_watcher, bool set_marker) {
     bool change = false;
     if (obj->mode == 0) {
@@ -304,18 +324,33 @@ static bool change_mode(struct object *obj, bool set_watcher, bool set_marker) {
     return change;
 }
 
-inline static bool is_near(float p1[3], float p2[3]) {
-    return DIST2(p1, p2) < AOI_RADIS2 * 0.25f;
+/**
+ *Two point is near?
+ **/
+inline static bool is_near(struct aoi_space *space, float p1[3], float p2[3]) {
+    return DIST2(p1, p2) < POW2(space->aoi_radius) * 0.25f;
 }
 
+/**
+ * Caculate two object's distance
+ *
+ **/
 inline static float dist2(struct object *p1, struct object *p2) {
     float d = DIST2(p1->position, p2->position);
     return d;
 }
 
+/**
+ * Updte a aoi_space's object status
+ * modestring is:
+ * "w" : watcher
+ * "m" : marker
+ * "wm" : watcher and marker
+ * "d" : drop an object
+ **/
 void aoi_update(struct aoi_space *space,
                 uint32_t          id,
-                const char       *modestring,
+                const char *      modestring,
                 float             pos[3]) {
     struct object *obj = map_query(space, space->object, id);
     int            i;
@@ -344,7 +379,7 @@ void aoi_update(struct aoi_space *space,
     bool changed = change_mode(obj, set_watcher, set_marker);
 
     copy_position(obj->position, pos);
-    if (changed || !is_near(pos, obj->last)) {
+    if (changed || !is_near(space, pos, obj->last)) {
         // new object or change object mode
         // or position changed
         copy_position(obj->last, pos);
@@ -361,7 +396,7 @@ static void drop_pair(struct aoi_space *space, struct pair_list *p) {
 
 static void flush_pair(struct aoi_space *space, aoi_Callback cb, void *ud) {
     struct pair_list **last = &(space->hot);
-    struct pair_list  *p    = *last;
+    struct pair_list * p    = *last;
     while (p) {
         struct pair_list *next = p->next;
         if (p->watcher->version != p->watcher_version ||
@@ -371,10 +406,10 @@ static void flush_pair(struct aoi_space *space, aoi_Callback cb, void *ud) {
             *last = next;
         } else {
             float distance2 = dist2(p->watcher, p->marker);
-            if (distance2 > AOI_RADIS2 * 4) {
+            if (distance2 > POW2(space->aoi_radius) * 4) {
                 drop_pair(space, p);
                 *last = next;
-            } else if (distance2 < AOI_RADIS2) {
+            } else if (distance2 < POW2(space->aoi_radius)) {
                 cb(ud, p->watcher->id, p->marker->id);
                 drop_pair(space, p);
                 *last = next;
@@ -386,9 +421,9 @@ static void flush_pair(struct aoi_space *space, aoi_Callback cb, void *ud) {
     }
 }
 
-static void set_push_back(struct aoi_space  *space,
+static void set_push_back(struct aoi_space * space,
                           struct object_set *set,
-                          struct object     *obj) {
+                          struct object *    obj) {
     if (set->number >= set->cap) {
         int   cap = set->cap * 2;
         void *tmp = set->slot;
@@ -424,17 +459,17 @@ static void set_push(void *s, struct object *obj) {
 }
 
 static void gen_pair(struct aoi_space *space,
-                     struct object    *watcher,
-                     struct object    *marker,
+                     struct object *   watcher,
+                     struct object *   marker,
                      aoi_Callback      cb,
-                     void             *ud) {
+                     void *            ud) {
     if (watcher == marker) { return; }
     float distance2 = dist2(watcher, marker);
-    if (distance2 < AOI_RADIS2) {
+    if (distance2 < POW2(space->aoi_radius)) {
         cb(ud, watcher->id, marker->id);
         return;
     }
-    if (distance2 > AOI_RADIS2 * 4) { return; }
+    if (distance2 > POW2(space->aoi_radius) * 4) { return; }
     struct pair_list *p = space->alloc(space->alloc_ud, NULL, sizeof(*p));
     p->watcher          = watcher;
     grab_object(watcher);
@@ -446,11 +481,11 @@ static void gen_pair(struct aoi_space *space,
     space->hot         = p;
 }
 
-static void gen_pair_list(struct aoi_space  *space,
+static void gen_pair_list(struct aoi_space * space,
                           struct object_set *watcher,
                           struct object_set *marker,
                           aoi_Callback       cb,
-                          void              *ud) {
+                          void *             ud) {
     int i, j;
     for (i = 0; i < watcher->number; i++) {
         for (j = 0; j < marker->number; j++) {
@@ -459,6 +494,9 @@ static void gen_pair_list(struct aoi_space  *space,
     }
 }
 
+/**
+ * Call the function period.It will call the callback indeed
+ **/
 void aoi_message(struct aoi_space *space, aoi_Callback cb, void *ud) {
     flush_pair(space, cb, ud);
     space->watcher_static->number = 0;
@@ -480,6 +518,9 @@ static void *default_alloc(void *ud, void *ptr, size_t sz) {
     return NULL;
 }
 
-struct aoi_space *aoi_new() {
-    return aoi_create(default_alloc, NULL);
+/**
+ * Create a aoi_space use default memory allocate function
+ **/
+struct aoi_space *aoi_new(float radius) {
+    return aoi_create(default_alloc, radius, NULL);
 }

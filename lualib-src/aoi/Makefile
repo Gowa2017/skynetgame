@@ -9,8 +9,11 @@ ifeq ($(OS), Linux)
 SHARED := -fPIC --shared
 endif
 all: lib test
-	gcc -o aoi -g -Wall aoi.c test.c
+	$(CC) -o test -g -Wall aoi.c test.c
 lib:
-	$(CC) -o aoi.so -g -Wall aoi.c lua-aoi.c $(SHARED) -I$(LUAINC) -I$(SKYNETDIR)/skynet-src
+	$(CC) -o laoi.so -g -Wall aoi.c lua-aoi.c $(SHARED) -I$(LUAINC) -I$(SKYNETDIR)/skynet-src
 test:
-	gcc -o testmap -g -Wall testmap.c
+	$(CC) -o testmap -g -Wall testmap.c
+
+clean:
+	rm -f test testmap laoi.so
