@@ -11,7 +11,7 @@ endif
 all: lib test
 	$(CC) -o test -g -Wall aoi.c test.c
 lib:
-	$(CC) -o laoi.so -g -Wall aoi.c lua-aoi.c $(SHARED) -I$(LUAINC) -I$(SKYNETDIR)/skynet-src
+	$(CC) -o aoi.so -g -Wall aoi.c lua-aoi.c $(SHARED) -I$(LUAINC) -I$(SKYNETDIR)/skynet-src
 test:
 	$(CC) -o testmap -g -Wall testmap.c
 

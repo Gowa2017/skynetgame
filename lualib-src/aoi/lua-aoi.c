@@ -101,7 +101,7 @@ static const struct luaL_Reg l_methods[] = {
     {NULL, NULL},
 };
 
-int luaopen_laoi(lua_State *L) {
+int luaopen_aoi(lua_State *L) {
     luaL_checkversion(L);
 
     luaL_newmetatable(L, "aoi_meta");
