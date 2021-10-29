@@ -6,7 +6,6 @@ local mongo   = require("skynet.db.mongo")
 local db     
 local CMD     = {}
 function CMD.start(conf)
-  print("connect db")
   db = mongo.client(conf):getDB(conf.authdb)
 end
 
