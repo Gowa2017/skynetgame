@@ -74,6 +74,7 @@ static int laoi_update(lua_State *L) {
 }
 
 /**
+ * params table, return paris will insert it
  * Return table will like { { watcherid, markerid, len}, ...}
  **/
 static int laoi_message(lua_State *L) {
@@ -84,19 +85,19 @@ static int laoi_message(lua_State *L) {
         return 2;
     }
 
-    lua_newtable(L);
+    // lua_newtable(L);
     aoi_message(aoi, lcallback, (void *)L);
     return 1;
 }
 
 static const struct luaL_Reg laoi_methods[] = {
-    {"laoi_update", laoi_update},
-    {"laoi_message", laoi_message},
+    {"update", laoi_update},
+    {"message", laoi_message},
     {NULL, NULL},
 };
 
 static const struct luaL_Reg l_methods[] = {
-    {"laoi_create", laoi_create},
+    {"create", laoi_create},
     {NULL, NULL},
 };
 
