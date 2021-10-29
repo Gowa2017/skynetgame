@@ -78,8 +78,7 @@ end
 -- call by self (when gate open)
 function server.register_handler(name)
   servername = name
-  skynet.call(loginservice, "lua", "register_gate",
-              skynet.getenv("mode") .. "@" .. servername)
+  skynet.call(loginservice, "lua", "register_gate", servername, skynet.self())
 end
 
 msgserver.start(server)
