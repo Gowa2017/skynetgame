@@ -1,0 +1,7 @@
+
+syntax = "proto3";
+package s2c.game;
+
+message Scene {
+  string desc = 1;
+}
