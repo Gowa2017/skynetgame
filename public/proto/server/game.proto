@@ -4,4 +4,10 @@ package s2c.game;
 
 message Scene {
   string desc = 1;
+  uint32 map = 2;
+  repeated string npcs = 3;
+}
+
+message SceneEntitys {
+  repeated string npcs = 1;
 }
