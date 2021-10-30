@@ -5,7 +5,7 @@ return {
   lua    = {
     id   = 10,
     name = "lua",
-    --- skynet do it
+    --- skynet do it, we need manualy call skynet.dispatch('lua',..)
   },
   client = {
     id     = 3,
