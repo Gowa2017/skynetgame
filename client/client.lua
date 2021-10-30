@@ -121,9 +121,9 @@ local function recv_response(v)
   local protoId, content, ok, session = string.unpack(
                                           ">I2c" .. tostring(#v - 7) .. "B>I4",
                                           v)
-  print(protoId, content, ok, session)
+  print("<======", protoId, content, ok, session)
 
-  content = pb.decode("s2c.game.Scene", content)
+  content = pb.decode(map.s2cbyid[protoId], content)
   local pretty                        = require("pl.pretty")
   pretty.dump(content)
   return ok ~= 0, content, session
