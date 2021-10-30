@@ -1,6 +1,7 @@
 local socket    = require "client.socket"
 local skynet    = require("skynet")
 local crypt     = require "client.crypt"
+local tconcat   = table.concat
 
 local pb        = require("pb")
 local pbio      = require("pb.io")
@@ -123,9 +124,7 @@ local function recv_response(v)
                                           v)
   print("<======", protoId, content, ok, session)
 
-  content = pb.decode(map.s2cbyid[protoId], content)
-  local pretty                        = require("pl.pretty")
-  pretty.dump(content)
+  content = pb.decode(tconcat(map.s2cbyid[protoId], "."), content)
   return ok ~= 0, content, session
 end
 
