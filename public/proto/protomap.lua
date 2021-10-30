@@ -15,14 +15,16 @@ return {
   },
   s2c     = {
     ["s2c.game.Scene"] = 10004,
+    ["s2c.game.SceneEntitys"] = 10005,
     ["s2c.login.Challenge"] = 10001,
     ["s2c.login.Key"] = 10003,
     ["s2c.login.Resp"] = 10002,
   },
   s2cbyid = {
-    [10004] = "s2c.game.Scene",
     [10001] = "s2c.login.Challenge",
     [10002] = "s2c.login.Resp",
     [10003] = "s2c.login.Key",
+    [10004] = "s2c.game.Scene",
+    [10005] = "s2c.game.SceneEntitys",
   },
 }
