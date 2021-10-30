@@ -1,5 +1,7 @@
 local skynet    = require("skynet")
-local service   = require("go.service")
+require "skynet.manager"
+local timer     = require("go.timer")
+
 local pool      = {}
 local min       = skynet.getenv("agentPool") or 10
 local uid2agent = {}
@@ -19,9 +21,12 @@ function CMD.get(uid)
   return a
 end
 
-service.name(".agentpool")
-service.setMessageCmds("lua", CMD)
-service.start(function()
+skynet.start(function()
+  skynet.register(".agentpool")
+  timer.start()
   checker()
-  service.timerPeriod(10, checker)
+  timer.period(10, checker)
+  skynet.dispatch("lua", function(session, source, cmd, ...)
+    skynet.retpack(CMD[cmd](...))
+  end)
 end)

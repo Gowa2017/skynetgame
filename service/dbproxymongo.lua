@@ -1,5 +1,7 @@
-local service = require("go.service")
+local skynet  = require("skynet")
+require "skynet.manager"
 local LOG     = require("go.logger")
+local message = require("conf.message")
 
 local mongo   = require("skynet.db.mongo")
 
@@ -34,7 +36,15 @@ function ACTION.delete(t, s)
   return db:getCollection(t):safe_delete(s)
 end
 
-service.setMessageCmds("lua", CMD)
-service.enableMessage("db")
-service.setMessageCmds("db", ACTION)
-service.start()
+skynet.register_protocol(message.db)
+skynet.start(function()
+  skynet.dispatch("lua", function(session, source, cmd, ...)
+    skynet.retpack(CMD[cmd](...))
+  end)
+
+  skynet.dispatch("db", function(session, source, cmd, ...)
+    skynet.retpack(ACTION[cmd](...))
+
+  end)
+
+end)

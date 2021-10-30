@@ -1,5 +1,6 @@
 local skynet  = require("skynet")
-local service = require("go.service")
+local message = require("conf.message")
+
 local net     = require("netproto")
 net.init()
 local CMD     = {}
@@ -37,18 +38,17 @@ function GAME.Enter(data)
   return
     net.packString("s2c.game.Scene", { desc = desc, map  = 1, npcs = npcs })
 end
-service.enableMessage("client")
--- service.setMessageCmds("client", { game = GAME })
--- service.setMessageCmds("lua", CMD)
--- service.start()
-local client  = { game = GAME }
+
+skynet.register_protocol(message.client)
+skynet.dispatch("client", function(_, _, cmd, subcmd, ...)
+  print(cmd, subcmd)
+  local f = assert(GAME[subcmd])
+  skynet.ret(f(...))
+end)
+skynet.dispatch("lua", function(session, source, cmd, ...)
+  local f = assert(CMD[cmd])
+  skynet.retpack(f(...))
+end)
 skynet.start(function()
-  skynet.dispatch("client", function(_, _, cmd, ...)
-    skynet.ret(GAME.Enter(...))
-  end)
-  skynet.dispatch("lua", function(session, source, cmd, ...)
-    print(cmd)
-    skynet.retpack(skynet.packstring(CMD[cmd](...)))
-  end)
 
 end)
