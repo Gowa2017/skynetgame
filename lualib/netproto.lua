@@ -6,6 +6,7 @@ local sfmt         = string.format
 local spack        = string.pack
 local sunpack      = string.unpack
 local tunpack      = table.unpack
+local tconcat      = table.concat
 
 ---We package our data in protobuf format, and, the final format is
 ---* | 2 byte        | 2 byte       |  < 65535 byte|
@@ -102,11 +103,10 @@ end
 
 function M.unpackString(msg)
   local iProtoId      = sunpack(">I2", msg)
-  local cmd           = M.c2sbyid(iProtoId)
-  assert(cmd, sfmt("protoId %d not fuond", iProtoId))
-  local mData, errMsg = pb.decode(cmd, msg:sub(3))
+  local module        = M.c2sbyid(iProtoId)
+  local mData, errMsg = pb.decode(tconcat(module, "."), msg:sub(3))
   if mData then
-    return cmd:sub(5), mData
+    return module[2], module[3], mData
   else
     error(errMsg)
   end
