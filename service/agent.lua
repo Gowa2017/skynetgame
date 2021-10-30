@@ -31,13 +31,24 @@ end
 
 local GAME    = {}
 function GAME.Enter(data)
-  local pretty = require("pl.pretty")
-  pretty.dump(data)
-  local sid    = skynet.call(".world", "lua", "userScene", { map = 1, uid = 2 })
-  local desc   = skynet.call(sid, "lua", "enter", { map = 1, uid = 2 })
-  return net.packString("s2c.game.Scene", { desc = desc })
+  local sid        = skynet.call(".world", "lua", "userScene",
+                                 { map = 1, uid = 2 })
+  local desc, npcs = skynet.call(sid, "lua", "enter", { map = 1, uid = 2 })
+  return
+    net.packString("s2c.game.Scene", { desc = desc, map  = 1, npcs = npcs })
 end
 service.enableMessage("client")
-service.setMessageCmds("client", { game = GAME })
-service.setMessageCmds("lua", CMD)
-service.start()
+-- service.setMessageCmds("client", { game = GAME })
+-- service.setMessageCmds("lua", CMD)
+-- service.start()
+local client  = { game = GAME }
+skynet.start(function()
+  skynet.dispatch("client", function(_, _, cmd, ...)
+    skynet.ret(GAME.Enter(...))
+  end)
+  skynet.dispatch("lua", function(session, source, cmd, ...)
+    print(cmd)
+    skynet.retpack(skynet.packstring(CMD[cmd](...)))
+  end)
+
+end)
