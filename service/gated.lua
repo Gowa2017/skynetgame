@@ -1,6 +1,7 @@
 local msgserver    = require "snax.msgserver"
 local crypt        = require "skynet.crypt"
 local skynet       = require "skynet"
+local LOG          = require("go.logger")
 
 local loginservice = tonumber(...)
 

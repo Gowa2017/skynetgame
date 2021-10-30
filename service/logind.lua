@@ -7,6 +7,7 @@ local server      = {
   port       = 8001,
   multilogin = false, -- disallow multilogin
   name       = "login_master",
+  instance   = 1,
 }
 
 skynet.register_protocol {

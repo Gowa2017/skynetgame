@@ -1,13 +1,15 @@
-local skynet  = require("skynet")
-local message = require("conf.message")
+local skynet        = require("skynet")
+local message       = require("conf.message")
+local LOG           = require("go.logger")
 
-local net     = require("netproto")
+local net           = require("netproto")
 net.init()
-local CMD     = {}
+local gate         
+local userid, subid
+local CMD           = {}
 
 function CMD.login(source, uid, sid, secret)
   -- you may use secret to make a encrypted data stream
-  skynet.error(string.format("%s is login", uid))
   gate = source
   userid = uid
   subid = sid
@@ -16,6 +18,7 @@ end
 
 local function logout()
   if gate then skynet.call(gate, "lua", "logout", userid, subid) end
+  skynet.call(".agentpool", "lua", "exit", skynet.self())
   skynet.exit()
 end
 
@@ -30,7 +33,7 @@ function CMD.afk(source)
   skynet.error(string.format("AFK"))
 end
 
-local GAME    = {}
+local GAME          = {}
 function GAME.Enter(data)
   local sid        = skynet.call(".world", "lua", "userScene",
                                  { map = 1, uid = 2 })
@@ -41,13 +44,12 @@ end
 
 skynet.register_protocol(message.client)
 skynet.dispatch("client", function(_, _, cmd, subcmd, ...)
-  print(cmd, subcmd)
   local f = assert(GAME[subcmd])
   skynet.ret(f(...))
 end)
 skynet.dispatch("lua", function(session, source, cmd, ...)
   local f = assert(CMD[cmd])
-  skynet.retpack(f(...))
+  skynet.retpack(f(source, ...))
 end)
 skynet.start(function()
 
