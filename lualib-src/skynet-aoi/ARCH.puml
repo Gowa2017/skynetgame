@@ -1,0 +1,17 @@
+@startuml AOI
+title AOI ARCH
+!include C4_Dynamic.puml
+
+Component(aoi, "Lua AOI", "LUA","维护玩家和NPC的视野\n维护实体到Agent的对应\n为CAOI服务提供回调\n通知到对应的Agent")
+Component(caoi, "C AOI", "C","维护所有的ID关系\nmessage消息发送至 Lua AOI")
+Component(scene, "Scene", "Lua")
+Component(agent, "Agent", "Lua")
+
+Rel_U(agent, scene, "进入场景","enter")
+Rel_U(scene, aoi, "通知AOI服务","characterenter")
+Rel_R(aoi, caoi, "通知C AOI","update")
+
+Rel_R(aoi,caoi,"定时回调","message")
+Rel_L(caoi,aoi,"回调消息","aoicallback watcherid markerid")
+Rel(aoi, agent,"构造视野并逐个通知","addaoiobj")
+@enduml
