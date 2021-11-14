@@ -1,0 +1,24 @@
+@startuml TEST
+
+skinparam ObjectAttributeFontColor red
+skinparam ObjectAttributeFontName "WenQuanYi Zen He"
+skinparam ObjectAttributeFontSize 16
+skinparam ObjectAttributeFontStyle bold
+skinparam ObjectBackgroundColor #85BBF0
+skinparam ObjectBorderColor #78A8D8
+skinparam ObjectBorderThickness 1
+skinparam ObjectFontColor blue
+skinparam ObjectFontName "WenQuanYi Zen He"
+skinparam ObjectFontSize 18
+skinparam ObjectFontStyle bold
+' skinparam ObjectStereotypeFontColor gray
+' skinparam ObjectStereotypeFontName
+' skinparam ObjectStereotypeFontSize
+' skinparam ObjectStereotypeFontStyle
+object A{
+    B : a
+}
+object B
+
+A o--> B
+@enduml

@@ -13,6 +13,3 @@
 [submodule "3rd/Penlight"]
 	path = 3rd/Penlight
 	url = https://github.com/lunarmodules/Penlight.git
-[submodule "tests/ltask"]
-	path = tests/ltask
-	url = https://github.com/cloudwu/ltask.git

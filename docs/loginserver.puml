@@ -1,0 +1,21 @@
+@startuml LoginServer
+skinparam DefaultFontName WenQuanYi Zen Hei
+skinparam DefaultMonospacedFontName UbuntuMono-R
+title LoginServer
+header LoginServer and GameServer in a node
+!include C4_Dynamic.puml
+Person(user, "User","User web, andorid, ios application to connection to game or login")
+Container(gameNode, "GameNode", "Skynet","When logout or disconnect will notify loginserver")
+ContainerDb(accdb, "AccoutDB", "Mongodb")
+Container_Boundary(loginNode, "LoginNode"){
+    Component(logind, "Logind", "Lua","Connection manage, transform socket fd to auth, notify the game node user login, receive game notify or logout, kick")
+    Component(auth, "Auth", "Lua","Do auth logic from accoutdb or third party authplatform")
+}
+Rel_L(gameNode,logind,"Register")
+Rel_U(user, logind, "Connect and handshake","TCP")
+Rel_L(logind, auth, "Transmit fd and call auth","call")
+Rel_D(accdb, auth,"Read account data")
+Rel_R(auth, logind,"Return auth result")
+Rel_R(logind, gameNode,"Notify uid and secret","login")
+Rel_L(gameNode,logind,"Notify logout","logout")
+@enduml
