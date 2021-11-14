@@ -122,8 +122,6 @@ local function recv_response(v)
   local protoId, content, ok, session = string.unpack(
                                           ">I2c" .. tostring(#v - 7) .. "B>I4",
                                           v)
-  print("<======", protoId, content, ok, session)
-
   content = pb.decode(tconcat(map.s2cbyid[protoId], "."), content)
   return ok ~= 0, content, session
 end
@@ -147,20 +145,20 @@ local function send_package(fd, pack)
 end
 
 local function game(token, result, secret)
-  local subid       = crypt.base64decode(string.sub(result, 5))
+  local subid            = crypt.base64decode(string.sub(result, 5))
   print("login ok, subid=", subid)
-  local text        = "echo"
-  local index       = 1
+  local text             = "echo"
+  local index            = 1
 
   print("connect")
   fd = assert(socket.connect("127.0.0.1", 8888))
-  local readpackage = unpack_f(unpack_package, fd)
+  local readpackage      = unpack_f(unpack_package, fd)
   last = ""
-  local handshake   = string.format("%s@%s#%s:%d",
-                                    crypt.base64encode(token.user),
-                                    crypt.base64encode(token.server),
-                                    crypt.base64encode(subid), index)
-  local hmac        = crypt.hmac64(crypt.hashkey(handshake), secret)
+  local handshake        = string.format("%s@%s#%s:%d",
+                                         crypt.base64encode(token.user),
+                                         crypt.base64encode(token.server),
+                                         crypt.base64encode(subid), index)
+  local hmac             = crypt.hmac64(crypt.hashkey(handshake), secret)
 
   send_package(fd, handshake .. ":" .. crypt.base64encode(hmac))
 
@@ -179,11 +177,11 @@ local function game(token, result, secret)
   fd = assert(socket.connect("127.0.0.1", 8888))
   last = ""
 
-  local handshake   = string.format("%s@%s#%s:%d",
-                                    crypt.base64encode(token.user),
-                                    crypt.base64encode(token.server),
-                                    crypt.base64encode(subid), index)
-  local hmac        = crypt.hmac64(crypt.hashkey(handshake), secret)
+  local handshake        = string.format("%s@%s#%s:%d",
+                                         crypt.base64encode(token.user),
+                                         crypt.base64encode(token.server),
+                                         crypt.base64encode(subid), index)
+  local hmac             = crypt.hmac64(crypt.hashkey(handshake), secret)
 
   send_package(fd, handshake .. ":" .. crypt.base64encode(hmac))
 
@@ -192,8 +190,11 @@ local function game(token, result, secret)
         send_request("c2s.game.Enter", { msg  = "fake", time = os.time() }, 0))
   print("===>",
         send_request("c2s.game.Enter", { msg  = "again", time = os.time() }, 1))
-  print("<===", recv_response(readpackage()))
-  print("<===", recv_response(readpackage()))
+  local ok, res, session = recv_response(readpackage())
+  local pretty           = require("pl.pretty")
+  pretty.dump(res)
+  ok, res, session = recv_response(readpackage())
+  pretty.dump(res)
 
   print("disconnect")
   socket.close(fd)
