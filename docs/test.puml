@@ -20,5 +20,4 @@ object A{
 }
 object B
 
-A o--> B
 @enduml

@@ -24,4 +24,5 @@ Rel_U(user, gated,"Connect Handshake Request","TCP")
 Rel_U(gated, agent,"Request","rawcall")
 Rel_L(agent,world,"Query map scene info","call")
 Rel_D(agent,scene,"Enter scene")
+Rel_Neighbor(gated,loginServer,"logout")
 @enduml

@@ -1,6 +1,7 @@
 @startuml LoginServer
 skinparam DefaultFontName WenQuanYi Zen Hei
-skinparam DefaultMonospacedFontName UbuntuMono-R
+skinparam DefaultMonospacedFontName UbuntuMono
+
 title LoginServer
 header LoginServer and GameServer in a node
 !include C4_Dynamic.puml
