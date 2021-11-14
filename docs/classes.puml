@@ -1,0 +1,48 @@
+@startuml Class
+title Game Classes
+' hide circle
+
+' skinparam {
+'     classBackgroundColor #8f8faa
+'     classFontStyle bold
+'     interfaceFontStyle bold
+'     monochrome true
+'     shadowing false
+'     ranksep 120
+' }
+class EventEmitter
+class Scriptable
+class Metadatable
+class GameEntity
+class Character
+class Npc
+class Player
+class Item
+class Area
+class Room
+class Inventory
+class Factory
+class Manager
+class Effect
+class Attribute
+class EffectList
+class AttributeFormula
+class Skill
+
+Metadatable <|-- GameEntity: mixin
+Scriptable <|-- GameEntity: mixin
+EventEmitter <|-- GameEntity
+GameEntity <|-- Item
+GameEntity <|-- Area
+GameEntity <|-- Room
+EventEmitter <|-- Character
+Character <|-- Player
+Character <|-- Npc
+Scriptable <|-- Npc: mixin
+Character o--> EffectList
+Character o--> Attribute
+Attribute *--> AttributeFormula
+EffectList *--> Effect
+Character *--> Skill
+
+@enduml
