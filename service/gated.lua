@@ -13,7 +13,9 @@ local internal_id  = 0
 -- login server disallow multi login, so login_handler never be reentry
 -- call by login server
 function server.login_handler(uid, secret)
-  if users[uid] then error(string.format("%s is already login", uid)) end
+  if users[uid] then
+    error(string.format("%s is already login", uid))
+  end
 
   internal_id = internal_id + 1
   local id       = internal_id -- don't use internal_id directly
@@ -67,7 +69,9 @@ end
 -- call by self (when socket disconnect)
 function server.disconnect_handler(username)
   local u = username_map[username]
-  if u then skynet.call(u.agent, "lua", "afk") end
+  if u then
+    skynet.call(u.agent, "lua", "afk")
+  end
 end
 
 -- call by self (when recv a request from client)

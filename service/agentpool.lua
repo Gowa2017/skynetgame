@@ -9,14 +9,18 @@ local agent2uid = {}
 
 local function checker()
   if #pool < min then
-    for i = 1, min - #pool do pool[#pool + 1] = skynet.newservice("agent") end
+    for i = 1, min - #pool do
+      pool[#pool + 1] = skynet.newservice("agent")
+    end
   end
 end
 
 local CMD       = {}
 
 function CMD.get(uid)
-  if uid2agent[uid] then return uid2agent[uid] end
+  if uid2agent[uid] then
+    return uid2agent[uid]
+  end
   local a = table.remove(pool)
   uid2agent[uid] = a
   agent2uid[a] = uid

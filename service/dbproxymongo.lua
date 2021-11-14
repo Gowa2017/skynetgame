@@ -24,7 +24,9 @@ end
 function ACTION.find(t, q, s)
   local iter = db:getCollection(t):find(q, s)
   local r    = {}
-  while iter:hasNext() do r[#r + 1] = iter:next() end
+  while iter:hasNext() do
+    r[#r + 1] = iter:next()
+  end
   return r
 end
 

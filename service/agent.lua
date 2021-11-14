@@ -36,10 +36,10 @@ end
 local GAME          = {}
 function GAME.Enter(data)
   local sid        = skynet.call(".world", "lua", "userScene",
-                                 { map = 1, uid = 2 })
-  local desc, npcs = skynet.call(sid, "lua", "enter", { map = 1, uid = 2 })
-  return
-    net.packString("s2c.game.Scene", { desc = desc, map  = 1, npcs = npcs })
+                                 { map = 1001, uid = 2 })
+  local desc, npcs = skynet.call(sid, "lua", "enter", { map = 1001, uid = 2 })
+  return net.packString("s2c.game.Scene",
+                        { desc = desc, map  = 1001, npcs = npcs })
 end
 
 skynet.register_protocol(message.client)

@@ -33,7 +33,9 @@ function server.auth_handler(token)
     uid      = true,
     password = true,
   })
-  if not ok then error("User does not exists") end
+  if not ok then
+    error("User does not exists")
+  end
   assert(password == ok.password, "Password mismath")
   return server, user
 end
@@ -44,7 +46,9 @@ function server.login_handler(server, uid, secret)
   local gameserver = assert(server_list[server], "Unknown server")
   -- only one can login, because disallow multilogin
   local last       = user_online[uid]
-  if last then skynet.call(last.address, "lua", "kick", uid, last.subid) end
+  if last then
+    skynet.call(last.address, "lua", "kick", uid, last.subid)
+  end
   if user_online[uid] then
     error(string.format("user %s is already online", uid))
   end

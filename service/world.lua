@@ -16,14 +16,18 @@ end
 
 skynet.start(function()
   local res = sharetable.query(skynet.getenv "daobiao")
-  for i = 1, 3 do services[#services + 1] = skynet.newservice("scene") end
-  for id, map in pairs(res.maps) do
-    scenes[id] = map
+  for i = 1, 3 do
+    services[#services + 1] = skynet.newservice("scene", i)
+  end
+  for _, map in pairs(res.maps) do
+    scenes[map.id] = map
     local s = services[balance]
-    map2service[id] = s
-    skynet.call(s, "lua", "created", id, map)
+    map2service[map.id] = s
+    skynet.call(s, "lua", "created", map.id, map)
     balance = balance + 1
-    if balance > #services then balance = 1 end
+    if balance > #services then
+      balance = 1
+    end
   end
 
   skynet.register(".world")
