@@ -1,14 +1,12 @@
-@startuml GameSever
-title GameServer
-header Loginserver and GameServer on a Node
+@startuml GameNode
 skinparam DefaultFontName WenQuanYi Zen Hei
 skinparam DefaultMonospacedFontName UbuntuMono-R
 !include C4_Component.puml
 !include C4_Dynamic.puml
-Person(user, "User")
+Person(user, "User","User web, andorid, ios application to connection to game or login")
 ContainerDb(gameDb, "GameDB", "Mongodb")
-Container(loginServer, "LoginServer", "Skynet","Auth and notify gameserver")
-Container_Boundary(gameServer, "GameServer"){
+Container(loginServer, "LoginNode", "Skynet","Auth and notify gameserver")
+Container_Boundary(gameServer, "GameNode"){
     Component(gated, "Gated", "Lua","Manage connections, notify loginserver when kicked and logout")
     Component(agent, "Agent", "Lua","Handle most of user requests and return a string to gated, or need communite with other service")
     Component(world, "World", "Lua","Make scene from maps, save all remote secene services, maintenance all player scene info")
@@ -20,7 +18,7 @@ Rel(world,scene,"Newservice")
 Rel_L(loginServer, gated,"Notify uid, secret","login")
 Rel_U(gated, agent,"New","login")
 Rel_D(gameDb, agent,"Load player data")
-Rel_U(user, gated,"Connect Handshake Request","TCP")
+Rel_U(user, gated,"Connect Handshake Request","TCP,line base handshake, protobuf request")
 Rel_U(gated, agent,"Request","rawcall")
 Rel_L(agent,world,"Query map scene info","call")
 Rel_D(agent,scene,"Enter scene")
