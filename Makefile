@@ -44,3 +44,7 @@ clean:
 	make -C 3rd/pbc clean
 	make -C $(SKYNETDIR) clean
 	rm -f $(LUACLIB_TARGET)
+cleanall:
+	make -C 3rd/pbc clean
+	make -C $(SKYNETDIR) cleanall
+	rm -f $(LUACLIB_TARGET)
