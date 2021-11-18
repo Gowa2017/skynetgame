@@ -21,6 +21,7 @@ LUAINC:=$(SKYNETDIR)/3rd/lua
 
 CFLAGS = -g -O2 -Wall -I$(LUAINC)
 LDFLAGS = $(LIBS)
+
 all: engine go libs
 
 engine:
@@ -29,22 +30,30 @@ engine:
 go:
 	make -C skynetgo LUAINC=`pwd`/$(LUAINC)
 
-LUACLIBS=pb protobuf
+LUACLIBS=pb protobuf skiplist
 LUACLIB_TARGET=$(patsubst %, $(LUACLIB_DIR)/%.so, $(LUACLIBS))
-libs: $(LUACLIB_TARGET)
 
+libs: $(LUACLIB_TARGET)
 $(LUACLIB_DIR)/pb.so: 3rd/lua-protobuf/pb.c
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ $(LDFLAGS)
 	install 3rd/lua-protobuf/protoc.lua public/proto
 $(LUACLIB_DIR)/protobuf.so: 3rd/pbc/binding/lua53/pbc-lua53.c
-	$(MAKE) -C 3rd/pbc
+	$(MAKE) -C 3rd/pbc LUA_INCLUDE_DIR=$(LUAINC)
 	$(CC) $(CFLAGS) $(SHARED) -o $@ -I3rd/pbc -I$(LUAINC) -L3rd/pbc/build  -lpbc
+$(LUACLIB_DIR)/skiplist.so: 3rd/lua-zset/*.c
+	$(CC) $(CFLAGS) $(SHARED) -o $@ $^ -I$(LUAINC)
+	install 3rd/lua-zset/zset.lua lualib
 
 clean:
 	make -C 3rd/pbc clean
 	make -C $(SKYNETDIR) clean
 	rm -f $(LUACLIB_TARGET)
-cleanall:
-	make -C 3rd/pbc clean
+	rm -f lualib/zset.lua
+
+cleanall: clean
 	make -C $(SKYNETDIR) cleanall
-	rm -f $(LUACLIB_TARGET)
+
+testzset:
+	lua -l env 3rd/lua-zset/test.lua
+	lua -l env 3rd/lua-zset/test_sl.lua
+test: testzset

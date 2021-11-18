@@ -13,3 +13,6 @@
 [submodule "3rd/Penlight"]
 	path = 3rd/Penlight
 	url = https://github.com/lunarmodules/Penlight.git
+[submodule "3rd/lua-zset"]
+	path = 3rd/lua-zset
+	url = https://github.com/xjdrew/lua-zset.git
