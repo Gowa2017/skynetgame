@@ -7,8 +7,8 @@ Person(user, "User","User web, andorid, ios application to connection to game or
 Container(gameNode, "GameNode", "Skynet","When logout or disconnect will notify loginserver")
 ContainerDb(accdb, "AccoutDB", "Mongodb")
 Container_Boundary(loginNode, "LoginNode"){
-    Component(logind, "Logind", "Lua","Connection manage, transform socket fd to auth, notify the game node user login, receive game notify or logout, kick")
-    Component(auth, "Auth", "Lua","Do auth logic from accoutdb or third party authplatform")
+    Component(logind, "Logind", "Lua","接受客户端新连接 调用Auth进行认证 接收GameNode注册消息 进行登录成功后处理 接收GameNode下线消息")
+    Component(auth, "Auth", "Lua","密钥协商 执行认证结果返回Logind")
 }
 Rel_L(gameNode,logind,"Register")
 Rel_U(user, logind, "Connect and handshake","TCP,Line base")

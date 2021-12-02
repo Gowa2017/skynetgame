@@ -9,7 +9,6 @@ System_Boundary(arch, "Arch"){
     ContainerDb(gamedb, "GameDB", "mongodb")
     ContainerDb(logdb, "LogDB", "mysql")
 }
-
 Rel_U(user, login, "注册、登录","TCP,Line base")
 Rel_U(user, game, "游戏","TCP,line base handshake, protobuf request")
 Rel_Neighbor(login, game, "上线通知","skynet.cluster.call")

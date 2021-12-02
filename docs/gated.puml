@@ -1,0 +1,90 @@
+@startuml gated
+!include core.puml
+!include Skynet.puml
+title Component Gated
+
+left to right direction
+rectangle skynet {
+
+}
+Component_Boundary(agent, "Agent"){
+
+}
+Component_Boundary(alias, "游戏网关"){
+rectangle GateServer {
+map sockethandler {
+    open =>
+    data =>
+    more =>
+    close =>
+    error =>
+    warning =>
+}
+map gscmd {
+    open =>
+    close =>
+}
+map gsfunc {
+    openclient =>
+    closeclient =>
+    start =>
+}
+}
+rectangle MsgServer {
+object msgcmd {
+    login
+    logout
+    kick
+}
+map msghandler {
+    open =>
+    command =>
+
+    connect =>
+    message =>
+
+    disconnect =>
+    error =>
+}
+object msgfunc {
+    userid
+    username
+    login
+    logout
+    ip
+    start
+}
+
+}
+
+map gated {
+    register_handler =>
+    login_handler =>
+    logout_handler =>
+    kick_handler =>
+    request_handler =>
+    disconnect_handler =>
+}
+
+gscmd::open --> msghandler::open: start server
+msghandler::open--> gated::register_handler
+
+sockethandler::open --> msghandler::connect: client connect
+msghandler::connect --> gsfunc::openclient: make client id can read and write
+sockethandler::close --> msghandler::disconnect
+msghandler::disconnect --> gated::disconnect_handler
+
+sockethandler::data  --> msghandler::message: socket data
+msghandler::message --> gated::request_handler: handle request
+
+msghandler::command --> msgcmd
+msgcmd::login --> gated::login_handler
+msgcmd::logout --> gated::logout_handler
+msgcmd::kick --> gated::kick_handler
+
+skynet --> msghandler::command: dispatch message
+}
+
+gated::request_handler --> agent: rawcall
+
+@enduml

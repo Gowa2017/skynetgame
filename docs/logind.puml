@@ -1,0 +1,25 @@
+@startuml Logind
+!include Skynet.puml
+!include core.puml
+left to right direction
+map handler {
+    auth_handler =>
+    login_handler =>
+}
+Component_Boundary(gameNode, "GameNode"){
+
+}
+Component_Boundary(login, "loginmaster"){
+    object server
+
+}
+Component_Boundary(auth, "Auth"){
+
+}
+
+server --> auth : accept
+auth --> handler::auth_handler: auth fd and account
+
+server --> handler::login_handler: auth ok, do login logic
+handler::login_handler --> gameNode: notify gamenode
+@enduml
