@@ -12,9 +12,9 @@ function CMD.enter(user)
   return maps[user.map].desc, maps[user.map].npcs
 end
 
+skynet.dispatch("lua", function(session, source, cmd, ...)
+  local f = assert(CMD[cmd])
+  skynet.retpack(f(...))
+end)
 skynet.start(function()
-  skynet.dispatch("lua", function(session, source, cmd, ...)
-    local f = assert(CMD[cmd])
-    skynet.retpack(f(...))
-  end)
 end)

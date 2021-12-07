@@ -7,17 +7,22 @@ skynet.start(function()
   skynet.newservice("debug_console", 7001)
   skynet.newservice("agentpool")
   skynet.newservice("world")
-  local login = skynet.newservice("logind")
-  local gate  = skynet.newservice("gated", login)
+  local login   = skynet.newservice("logind")
+  local gate    = skynet.newservice("gated", login)
   skynet.call(gate, "lua", "open",
               { port       = 8888, maxclient  = 64, servername = "sample" })
-  local db    = skynet.newservice("dbproxymongo")
+  local db      = skynet.newservice("dbproxymongo")
   skynet.name(".accdb", db)
   skynet.call(db, "lua", "start", {
-    host     = "127.0.0.1",
+    host     = "42.192.43.15",
     port     = 27017,
     username = "acc",
     password = "wouinibaba",
     authdb   = "account",
   })
+  local message = require("conf.message")
+  skynet.register_protocol(message.db)
+  local r       = skynet.call(db, "db", "find", "account", { id = 1 })
+  local pretty  = require("pl.pretty")
+  pretty.dump(r)
 end)

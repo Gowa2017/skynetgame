@@ -17,7 +17,9 @@ function CMD.login(source, uid, sid, secret)
 end
 
 local function logout()
-  if gate then skynet.call(gate, "lua", "logout", userid, subid) end
+  if gate then
+    skynet.call(gate, "lua", "logout", userid, subid)
+  end
   skynet.call(".agentpool", "lua", "exit", skynet.self())
   skynet.exit()
 end
@@ -52,5 +54,4 @@ skynet.dispatch("lua", function(session, source, cmd, ...)
   skynet.retpack(f(source, ...))
 end)
 skynet.start(function()
-
 end)

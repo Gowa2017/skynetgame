@@ -3,7 +3,7 @@ require "skynet.manager"
 local timer     = require("go.timer")
 
 local pool      = {}
-local min       = skynet.getenv("agentPool") or 2
+local min       = skynet.getenv("agentPool") or 20
 local uid2agent = {}
 local agent2uid = {}
 
@@ -32,12 +32,12 @@ function CMD.exit(agent)
   agent2uid[agent] = nil
   uid2agent[uid] = nil
 end
+skynet.dispatch("lua", function(session, source, cmd, ...)
+  skynet.retpack(CMD[cmd](...))
+end)
 skynet.start(function()
   skynet.register(".agentpool")
   timer.start()
   checker()
   timer.period(10, checker)
-  skynet.dispatch("lua", function(session, source, cmd, ...)
-    skynet.retpack(CMD[cmd](...))
-  end)
 end)
