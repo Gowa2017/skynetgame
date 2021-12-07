@@ -3,14 +3,15 @@
 !include Skynet.puml
 title Component Gated
 
+skinparam ObjectFontStyle bold
 left to right direction
 rectangle skynet {
 
 }
-Component_Boundary(agent, "Agent"){
 
+Service_Boundary(agent, "Agent"){
 }
-Component_Boundary(alias, "游戏网关"){
+Service_Boundary(alias, "游戏网关"){
 rectangle GateServer {
 map sockethandler {
     open =>
@@ -86,5 +87,6 @@ skynet --> msghandler::command: dispatch message
 }
 
 gated::request_handler --> agent: rawcall
+agent --> gated::request_handler: return string
 
 @enduml
