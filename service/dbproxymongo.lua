@@ -8,7 +8,8 @@ local mongo   = require("skynet.db.mongo")
 local db     
 local CMD     = {}
 function CMD.start(conf)
-  db = mongo.client(conf):getDB(conf.authdb)
+  db = assert(mongo.client(conf):getDB(conf.authdb), string.format(
+                "Connect to db (%s,%s) failed", conf.host, conf.authdb))
 end
 
 local ACTION  = {}
@@ -39,14 +40,11 @@ function ACTION.delete(t, s)
 end
 
 skynet.register_protocol(message.db)
+skynet.dispatch("lua", function(session, source, cmd, ...)
+  skynet.retpack(CMD[cmd](...))
+end)
+skynet.dispatch("db", function(session, source, cmd, ...)
+  skynet.retpack(ACTION[cmd](...))
+end)
 skynet.start(function()
-  skynet.dispatch("lua", function(session, source, cmd, ...)
-    skynet.retpack(CMD[cmd](...))
-  end)
-
-  skynet.dispatch("db", function(session, source, cmd, ...)
-    skynet.retpack(ACTION[cmd](...))
-
-  end)
-
 end)
