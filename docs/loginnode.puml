@@ -13,6 +13,7 @@ Container_Boundary(loginNode, "LoginNode"){
 Rel_L(gameNode,logind,"Register")
 Rel_U(user, logind, "Connect and handshake","TCP,Line base")
 Rel_L(logind, auth, "Transmit fd and call auth","call")
+Rel_U(user, auth, "authdata","TCP")
 Rel_D(accdb, auth,"Read account data")
 Rel_R(auth, logind,"Return auth result")
 Rel_R(logind, gameNode,"Notify uid and secret","login")

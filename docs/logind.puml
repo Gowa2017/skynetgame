@@ -3,8 +3,10 @@
 !include core.puml
 left to right direction
 map handler {
-    auth_handler =>
-    login_handler =>
+    auth_handler => "认证逻辑"
+    login_handler => "登录成功逻辑"
+    decode_handler => "解包数据"
+    encode_handler => "打包数据"
 }
 Component_Boundary(gameNode, "GameNode"){
 
