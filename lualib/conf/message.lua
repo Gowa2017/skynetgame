@@ -1,18 +1,35 @@
 local skynet   = require("skynet")
 local netproto = require("netproto")
+local tconcat  = table.concat
 
 return {
+  text   = {
+    id     = skynet.PTYPE_TEXT,
+    name   = "text",
+    pack   = function(...)
+      local n = select("#", ...)
+      if n == 0 then
+        return ""
+      end
+      if n == 1 then
+        return tostring(...)
+      end
+      return tconcat({ ... }, " ")
+    end,
+    unpack = skynet.tostring,
+  },
   lua    = {
-    id   = 10,
+    id   = skynet.PTYPE_LUA,
     name = "lua",
     --- skynet do it, we need manualy call skynet.dispatch('lua',..)
   },
   client = {
-    id     = 3,
+    id     = skynet.PTYPE_CLIENT,
     name   = "client",
-    unpack = function(...)
-      return netproto.unpackString(skynet.tostring(...))
-    end,
+    unpack = skynet.tostring,
+    -- unpack = function(...)
+    --   return netproto.unpackString(skynet.tostring(...))
+    -- end,
   },
   logic  = {
     id     = 100,
