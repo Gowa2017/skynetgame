@@ -5,6 +5,7 @@ local crypt   = require "client.crypt"
 local tinsert = table.insert
 local tremove = table.remove
 local tunpack = table.unpack
+local tconcat = table.concat
 local proto   = require("client.proto")
 
 local function Trace(msg)
@@ -52,6 +53,7 @@ function Robot.new(host, port, gamehost, gameport, opts)
     server_request_handlers = {},
     running                 = true,
     token                   = { server = "sample", user   = "a", pass   = "b" },
+    index                   = 1,
   }
   setmetatable(obj, { __index = Robot })
   return obj
@@ -94,10 +96,6 @@ function Robot:handle_server_request(name, args)
 end
 
 function Robot:parse_cmd(s)
-  if s == "" or s == nil then
-    return false
-  end
-
   local cmd       = ""
   local args_data = nil
   local b, e      = string.find(s, " ")
@@ -135,13 +133,14 @@ function Robot:parse_cmd(s)
   return true, cmd, args
 end
 
-local session = 0
 --- 执行命令，实际上这个就是向服务端发送消息
 ---@param cmd string @协议名称
 ---@param args table | string @协议数据
 ---@return boolean
 function Robot:run_cmd(cmd, args)
-  session = session + 1
+  -- self.index = self.index + 1
+  local v = args and (cmd .. " " .. args) or cmd
+  proto.send_request(self.fd, v, self.index)
 end
 
 --- 这个执行脚本会在一个新线程中进行加载
@@ -169,11 +168,19 @@ end
 ---* 3 解包
 ---* 4 调用 handler
 function Robot:check_net_package()
+  while true do
+    local resp, content, session = proto.recv_response(self.readpackage())
+    print("====>", content, session)
+    coroutine.yield()
+  end
 end
 
 ---读取标准输入的数据
 function Robot:check_console()
   local s = socket.readstdin()
+  if not s or #s == 0 then
+    return
+  end
   if s == "quit" then
     self.running = false
     return
@@ -181,23 +188,21 @@ function Robot:check_console()
   if s == "." then
     s = [[C2GSGMCmd {cmd="runtest"}]]
   end
-  if (s ~= nil and s ~= "") then
-    local ok, cmd, args = self:parse_cmd(s)
-    if ok then
-      if cmd == "script" then
-        self:fork(self.run_script, self, args)
-      else
-        self:fork(self.run_cmd, self, cmd, args)
-      end
-    end
-  end
+  self:fork(self.run_cmd, self, s)
+  -- local ok, cmd, args = self:parse_cmd(s)
+  -- if ok then
+  --   if cmd == "script" then
+  --     self:fork(self.run_script, self, args)
+  --   else
+  --     self:fork(self.run_cmd, self, cmd, args)
+  --   end
+  -- end
 end
 
 ---读取网络和标准输入的输入
 function Robot:check_io()
   local ok, err = pcall(function()
     while self.running do
-      self:check_net_package()
       self:check_console()
       coroutine.yield()
       -- wait next
@@ -250,7 +255,6 @@ function Robot:game()
   print("connect to game server")
   self.fd = assert(socket.connect(self.gamehost, self.gameport))
   self.last = ""
-  self.index = 0
 
   local handshake = string.format("%s@%s#%s:%d",
                                   crypt.base64encode(self.token.user),
@@ -262,36 +266,9 @@ function Robot:game()
   proto.send_package(self.fd, handshake .. ":" .. crypt.base64encode(hmac))
 
   print(self.readpackage())
-  print("===>", proto.send_request(self.fd, "echo", self.index))
-  -- don't recv response
-  -- print("<===",recv_response(readpackage()))
-
-  print("disconnect")
-  socket.close(self.fd)
-
-  self.index = self.index + 1
-
-  print("connect again")
-  self.fd = assert(socket.connect("127.0.0.1", 8888))
-  self.last = ""
-
-  local handshake = string.format("%s@%s#%s:%d",
-                                  crypt.base64encode(self.token.user),
-                                  crypt.base64encode(self.token.server),
-                                  crypt.base64encode(self.subid), self.index)
-  local hmac      = crypt.hmac64(crypt.hashkey(handshake), self.secret)
-
-  proto.send_package(self.fd, handshake .. ":" .. crypt.base64encode(hmac))
-
-  print(self.readpackage())
-  print("===>", proto.send_request(self.fd, "fake", 0)) -- request again (use last session 0, so the request message is fake)
-  print("===>", proto.send_request(self.fd, "again", 1)) -- request again (use new session)
-  print("<===", proto.recv_response(self.readpackage()))
-  print("<===", proto.recv_response(self.readpackage()))
-
-  print("disconnect")
-  socket.close(self.fd)
-
+  -- proto.send_request(self.fd, "echo", self.index)
+  -- self.index = self.index + 1
+  self:fork(self.check_net_package, self)
 end
 ---主循环，执行换一个循环后即让出，由 client 再次调度过来
 function Robot:start()
