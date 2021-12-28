@@ -35,18 +35,19 @@ end
 local M          = {}
 
 ---Used to start a db proxy service
-function M.mongo(conf)
+---@param conf table {host, port, username, password, db}
+function M.mongo(conf, handler)
   skynet.start(function()
     local mongo = require("skynet.db.mongo")
     ---@type mongo_db
-    local db    = mongo.client(conf):getDB("mud")
+    local db    = mongo.client(conf):getDB(conf.db)
     local cmd   = {}
     function cmd.find(c, query, selector)
       ---@type mongo_cursor
       local cur = db[c]:find(query, selector)
       if cur:count() < 1 then
         cur:close()
-        return skynet.retpack(false, "No data")
+        return false, "No data"
       end
 
       local res = {}
@@ -54,49 +55,119 @@ function M.mongo(conf)
         res[#res + 1] = cur:next()
       end
       cur:close()
-      skynet.retpack(true, res)
+      return true, res
     end
     function cmd.findOne(c, query, selector)
       local r = db[c]:findOne(query, selector)
-      if r then
-        skynet.retpack(true, r)
-      else
-        skynet.retpack(false, "No data")
-      end
+      return r and true or false, r or false
     end
     function cmd.update(c, selector, update, upsert, multi)
       local ok, err, r = db[c]:safe_update(selector, { ["$set"] = update },
                                            upsert, multi)
-      if not ok then
-        skynet.retpack(ok, err)
-      else
-        skynet.retpack(ok, r)
-      end
+      return ok, ok and r or err
     end
     function cmd.delete(c, selector, single)
       local ok, err, r = db[c]:safe_delete(selector, single)
-      if ok then
-        skynet.retpack(ok, r)
-      else
-        skynet.retpack(ok, err)
-      end
+      return ok, ok and r or err
     end
     function cmd.insert(c, doc)
       local ok, err, r = db[c]:safe_insert(doc)
-      if ok then
-        skynet.retpack(ok, r)
-      else
-        skynet.retpack(ok, err)
-      end
+      return ok, ok and r or err
     end
     skynet.dispatch("lua", function(_, _, action, ...)
-      cmd[action](...)
+      local ok, res
+      if handler and handler[action] then
+        ok, res = pcall(handler[action], db, ...)
+      else
+        ok, res = pcall(cmd[action], ...)
+      end
+      skynet.retpack(ok, res)
     end)
 
   end)
 
 end
 
+---comment
+---@param opts table {database,host, port, user, password,charset }
+function M.mysql(opts, handler)
+  skynet.start(function()
+    local mysql        = require("skynet.db.mysql")
+    ---@type MySQL
+    local db           = mysql.connect(opts)
+    local tconcat      = table.concat
+    local sfmt         = string.format
+    local cmd          = {}
+    local type_fmt_map = { string = "%s = %s", number = "%s = %d" }
+
+    local function kv_list(document)
+      local kf, vf = {}, {}
+      for k, v in pairs(document) do
+        kf[#kf + 1] = k
+        vf[#vf + 1] = type(v) == "string" and mysql.quote_sql_str(v) or v
+      end
+      return tconcat(kf, ","), tconcat(vf, ",")
+    end
+
+    local function kv_equal(t)
+      local cond = {}
+      for k, v in pairs(t) do
+        cond[#cond + 1] = sfmt(type_fmt_map[type(v)], k, type(v) == "string" and
+                                 mysql.quote_sql_str(v) or v)
+      end
+      return cond
+    end
+    function cmd.find(c, query, selector)
+      local sql = sfmt("select %%s from  %s where %%s", c)
+      sql = sfmt(sql, selector and tconcat(selector, ",") or "*",
+                 tconcat(kv_equal(query), " and "))
+      return db:query(sql)
+    end
+    function cmd.findOne(c, query, selector)
+      local sql = sfmt("select %%s from  %s where %%s limit 1", c)
+      sql = sfmt(sql, selector and tconcat(selector, ",") or "*",
+                 tconcat(kv_equal(query), " and "))
+      return db:query(sql)
+    end
+    function cmd.update(c, selector, update, upsert, multi)
+      local sql = multi and sfmt("update %s set %%s where %%s", c) or
+                    sfmt("update %s set %%s where %%s limit 1", c)
+      sql = sfmt(sql, tconcat(kv_equal(update)),
+                 tconcat(kv_equal(selector), " and "))
+      print(sql)
+      return db:query(sql)
+    end
+    function cmd.delete(c, selector, single)
+      local sql = single and sfmt("delete from  %s where %%s limit 1", c) or
+                    sfmt("delete from  %s where %%s", c)
+      sql = sfmt(sql, tconcat(kv_equal(selector), " and "))
+      return db:query(sql)
+    end
+    function cmd.insert(c, document)
+      local sql = sfmt("insert into %s(%%s) values(%%s)", c)
+      sql = sfmt(sql, kv_list(document))
+      return db:query(sql)
+    end
+    skynet.dispatch("lua", function(_, _, action, ...)
+      local ok, res
+      if handler and handler[action] then
+        ok, res = pcall(handler[action], db, ...)
+      else
+        ok, res = pcall(cmd[action], ...)
+      end
+      if not ok then
+        return skynet.retpack(ok, res)
+      end
+      if res.badresult then
+        return skynet.retpack(false, res.err)
+      end
+
+      return skynet.retpack(true, res)
+
+    end)
+  end)
+
+end
 ---Used to wrappe a db proxy service, will can direct call it
 ---@param addr any
 function M.wrap(addr)
