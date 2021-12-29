@@ -8,6 +8,10 @@ local co     = coroutine.create(function()
   r:start()
 end)
 while true do
-  coroutine.resume(co)
-  socket.usleep(1000)
+  if r.running then
+    coroutine.resume(co)
+    socket.usleep(1000)
+  else
+    return
+  end
 end
