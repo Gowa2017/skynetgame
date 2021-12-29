@@ -5,7 +5,7 @@ skynetgo    = root .. "skynetgo/"
 luaservice  = root .. "service/?.lua;" .. root .. "service/?/main.lua;" ..
               --skynetgo .. 'service/?.lua;' ..skynetgo .. 'service/?/main.lua;' ..
               skynet .. "service/?.lua;" .. skynet .. "service/?/main.lua;" ..
-              root .. "test/service/?.lua"
+              root .. "service/test/?.lua"
 lua_path    = root .. "lualib/?.lua;" .. root .. "lualib/?/init.lua;" ..
               skynet .. "lualib/?.lua;" ..
               skynetgo .. "?.lua"
