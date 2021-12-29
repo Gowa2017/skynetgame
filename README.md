@@ -1,4 +1,5 @@
 # Start
+
 ```
 make
 ```
@@ -50,4 +51,36 @@ Other service send message will like this:
 
 ```lua
 skynet.call(addr, 'lua', 'socket.data', ...)
+```
+
+# mongodb
+
+user tingsh to install mongodb 5.0.4.
+
+```js
+use admin
+db.createUser(
+  {
+    user: "root",
+    pwd: "wouinibaba", // or cleartext password
+    roles: [
+      { role: "userAdminAnyDatabase", db: "admin" },
+      { role: "readWriteAnyDatabase", db: "admin" }
+    ]
+  }
+)
+
+use account
+db.createUser({
+  user: "acc",
+  pwd: "wouinibaba", // Or  "<cleartext password>"
+  roles: [{ role: "readWrite", db: "account" }],
+});
+
+use game
+db.createUser({
+  user: "game",
+  pwd: "wouinibaba", // Or  "<cleartext password>"
+  roles: [{ role: "readWrite", db: "game" }],
+});
 ```
