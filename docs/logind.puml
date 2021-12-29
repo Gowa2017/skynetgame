@@ -1,27 +1,22 @@
 @startuml Logind
 !include Skynet.puml
-!include core.puml
-left to right direction
-map handler {
-    auth_handler => "认证逻辑"
-    login_handler => "登录成功逻辑"
-    decode_handler => "解包数据"
-    encode_handler => "打包数据"
-}
-Component_Boundary(gameNode, "GameNode"){
+!include C4_Dynamic.puml
+Person(user, "User")
+Container_Boundary(skynet, "Skynet"){
+Service(ss,"SocketServer")
+Service_Boundary(master, "Master"){
+    Fun(accept,"Accept")
 
 }
-Component_Boundary(login, "loginmaster"){
-    object server
+Table(conf,"Conf", "auth_handler login_handler")
+Service_Boundary(slave,"Slave") {
 
 }
-Component_Boundary(auth, "Auth"){
-
 }
 
-server --> auth : accept
-auth --> handler::auth_handler: auth fd and account
-
-server --> handler::login_handler: auth ok, do login logic
-handler::login_handler --> gameNode: notify gamenode
+Rel_U(user, ss, "TCP")
+Rel_U(ss, accept,"callback")
+Rel_L(accept, slave, "dispatch to slave to auth","call")
+Rel_U(slave, conf, "call auth_handler")
+Rel_U(accept,conf,"call login_handler")
 @enduml

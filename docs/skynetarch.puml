@@ -1,0 +1,29 @@
+@startuml Skynet
+!include C4_Component.puml
+!include C4_Dynamic.puml
+HIDE_STEREOTYPE()
+Container_Boundary(core, "Core"){
+  Component(worker, "WorkerThread", "C",)
+  Component(timer, "TimerThread", "C")
+  Component(socket, "SocketThread", "C")
+  Component(ss, "SocketServer", "C")
+
+}
+
+Container_Boundary(snlua1, "SNLUA"){
+    Component(service1mq, "ServiceMQ", "C")
+    Component(service1lua, "LuaState", "Lua")
+}
+Container_Boundary(snlua2, "SNLUA"){
+    Component(service2mq, "ServiceMQ", "C")
+    Component(service2lua, "LuaState", "Lua")
+}
+
+
+Rel_U(ss, socket, "handle")
+Rel_U(socket, service1mq, "push")
+Rel_D(service1mq, worker, "pop")
+Rel_U(worker, service1lua, "callback, dispatch_message")
+Rel_R(timer, service1mq, "push")
+Rel(service2lua, service1mq,"push")
+@enduml
