@@ -31,6 +31,10 @@ function proxy_meta:insert(tableName, document)
   return skynet.call(self.addr, "lua", "insert", tableName, document)
 end
 
+function proxy_meta:run(cmd, ...)
+  return skynet.call(self.addr, "lua", cmd, ...)
+end
+
 ---This can start a service or wrapper to call to a db proxy service
 local M          = {}
 
