@@ -31,8 +31,20 @@ function proxy_meta:insert(tableName, document)
   return skynet.call(self.addr, "lua", "insert", tableName, document)
 end
 
+---Run a custom command. This cmd will be handled by the handler
+---@param cmd any
+---@param ... any
+---@return any
 function proxy_meta:run(cmd, ...)
   return skynet.call(self.addr, "lua", cmd, ...)
+end
+
+---Execute a cmd or a query directly.
+---For mongodb , see https://docs.mongodb.com/manual/reference/command/, the result is different
+---@param ... any for mysql this is only a string sql.
+---@return boolean , any
+function proxy_meta:exec(...)
+  return skynet.call(self.addr, "lua", "exec", ...)
 end
 
 ---This can start a service or wrapper to call to a db proxy service
@@ -78,14 +90,26 @@ function M.mongo(conf, handler)
       local ok, err, r = db[c]:safe_insert(doc)
       return ok, ok and r or err
     end
+
+    function cmd.exec(...)
+      local r = db:runCommand(...)
+      if r.ok == 1 then
+        return true, r
+      else
+        return false, r
+      end
+    end
     skynet.dispatch("lua", function(_, _, action, ...)
       local ok, res
       if handler and handler[action] then
-        ok, res = pcall(handler[action], db, ...)
+        ok, success, res = pcall(handler[action], db, ...)
       else
-        ok, res = pcall(cmd[action], ...)
+        ok, success, res = pcall(cmd[action], ...)
       end
-      skynet.retpack(ok, res)
+      if not ok then
+        return skynet.retpack(ok, success)
+      end
+      skynet.retpack(success, res)
     end)
 
   end)
@@ -138,7 +162,6 @@ function M.mysql(opts, handler)
                     sfmt("update %s set %%s where %%s limit 1", c)
       sql = sfmt(sql, tconcat(kv_equal(update)),
                  tconcat(kv_equal(selector), " and "))
-      print(sql)
       return db:query(sql)
     end
     function cmd.delete(c, selector, single)
@@ -150,6 +173,10 @@ function M.mysql(opts, handler)
     function cmd.insert(c, document)
       local sql = sfmt("insert into %s(%%s) values(%%s)", c)
       sql = sfmt(sql, kv_list(document))
+      return db:query(sql)
+    end
+
+    function cmd.exec(sql)
       return db:query(sql)
     end
     skynet.dispatch("lua", function(_, _, action, ...)
