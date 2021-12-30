@@ -1,6 +1,7 @@
 local login       = require "snax.loginserver"
 local crypt       = require "skynet.crypt"
 local skynet      = require "skynet"
+local dbproxy     = require("dbproxy")
 
 local server      = {
   host       = "127.0.0.1",
@@ -17,6 +18,7 @@ skynet.register_protocol {
   unpack = skynet.unpack,
 }
 
+local accdb       = dbproxy.wrap(".accdb")
 local server_list = {}
 local user_online = {}
 local user_login  = {}
@@ -27,16 +29,12 @@ function server.auth_handler(token)
   user = crypt.base64decode(user)
   server = crypt.base64decode(server)
   password = crypt.base64decode(password)
-  -- assert(password == "password", "Invalid password")
-  local ok                     = skynet.call(".accdb", "db", "findOne", "users",
-                                             { username = user }, {
-    uid      = true,
-    password = true,
-  })
+  print(user, server, password)
+  local ok, res                = accdb:findOne("account", { username = user })
   if not ok then
     error("User does not exists")
   end
-  assert(password == ok.password, "Password mismath")
+  assert(password == res.password, "Password mismath")
   return server, user
 end
 
