@@ -1,12 +1,14 @@
+local protopb   = require "client.protopb"
 package.cpath = package.path .. ";./skynet/luaclib/?.so"
-print(package.cpath)
-local socket  = require "client.socket"
-local crypt   = require "client.crypt"
-local tinsert = table.insert
-local tremove = table.remove
-local tunpack = table.unpack
-local tconcat = table.concat
-local proto   = require("client.proto")
+local socket    = require "client.socket"
+local crypt     = require "client.crypt"
+
+local tinsert   = table.insert
+local tremove   = table.remove
+local tunpack   = table.unpack
+local tconcat   = table.concat
+local unpack    = require("client.unpack")
+local protoline = require("client.protoline")
 
 local function Trace(msg)
   print(debug.traceback(msg))
@@ -30,7 +32,7 @@ end
 ---@field callers table @调用着
 ---@field server_request_handlers table @消息处理器
 ---@field running boolean @是否运行中
-local Robot   = {}
+local Robot     = {}
 
 function Robot.new(host, port, gamehost, gameport, opts)
   assert(host, "need host")
@@ -48,12 +50,14 @@ function Robot.new(host, port, gamehost, gameport, opts)
     slient                  = opts.slient,
     -- shield = {},
     coroutines              = {},
+    session_cos             = {},
     timers                  = {},
     callers                 = {},
     server_request_handlers = {},
     running                 = true,
     token                   = { server = "sample", user   = "a", pass   = "b" },
     index                   = 1,
+    serial                  = opts.serial or "line",
   }
   setmetatable(obj, { __index = Robot })
   return obj
@@ -95,27 +99,31 @@ end
 function Robot:handle_server_request(name, args)
 end
 
+---parse commands
+---@param s string
+---@return boolean
+---@return string
+---@return any
 function Robot:parse_cmd(s)
-  local cmd       = ""
-  local args_data = nil
-  local b, e      = string.find(s, " ")
+  local cmd  = ""
+  local args = nil
+  local b, e = string.find(s, " ")
   if b then
     cmd = s:sub(0, b - 1)
-    args_data = s:sub(e + 1)
+    args = s:sub(e + 1)
   else
     cmd = s
   end
   if cmd == "script" then
-    if not args_data then
+    if not args then
       print("illegal cmd", s)
       return false
     end
-    return true, cmd, args_data
+    return true, cmd, args
   end
 
-  local args     
-  if args_data then
-    local f, err    = load("return " .. args_data)
+  if args then
+    local f, err    = load("return " .. args)
     if f == nil then
       print("illegal cmd", s)
       return false
@@ -140,7 +148,7 @@ end
 function Robot:run_cmd(cmd, args)
   -- self.index = self.index + 1
   local v = args and (cmd .. " " .. args) or cmd
-  proto.send_request(self.fd, v, self.index)
+  self.net.send_request(self.fd, v, self.index)
 end
 
 --- 这个执行脚本会在一个新线程中进行加载
@@ -169,15 +177,17 @@ end
 ---* 4 调用 handler
 function Robot:check_net_package()
   while true do
-    local resp, content, session = proto.recv_response(self.readpackage())
-    print("====>", content, session)
-    coroutine.yield()
+    local resp, content, session, t = self.net.recv_response(self.readpackage())
+    local co                        = self.session_cos[session]
+    coroutine.resume(co, content)
+    self.session_cos[session] = nil
+    -- coroutine.yield()
   end
 end
 
 ---读取标准输入的数据
 function Robot:check_console()
-  local s = socket.readstdin()
+  local s  = socket.readstdin()
   if not s or #s == 0 then
     return
   end
@@ -188,7 +198,14 @@ function Robot:check_console()
   if s == "." then
     s = [[C2GSGMCmd {cmd="runtest"}]]
   end
-  self:fork(self.run_cmd, self, s)
+  local co = coroutine.create(function(...)
+    print("run command")
+    self:run_cmd(s)
+    print(coroutine.yield())
+  end)
+  self.session_cos[self.index] = co
+  coroutine.resume(co)
+  -- self:fork(self.run_cmd, self, s)
   -- local ok, cmd, args = self:parse_cmd(s)
   -- if ok then
   --   if cmd == "script" then
@@ -215,11 +232,11 @@ function Robot:check_io()
 end
 function Robot:login()
   print("login....", self.fd)
-  self.readline = proto.unpacker_line(self.fd)
+  self.readline = unpack(protoline.unpack_line, self.fd)
   local challenge = crypt.base64decode(self.readline())
   print("chanllenge", challenge)
   local clientkey = crypt.randomkey()
-  proto.writeline(self.fd, crypt.base64encode(crypt.dhexchange(clientkey)))
+  protoline.writeline(self.fd, crypt.base64encode(crypt.dhexchange(clientkey)))
   local secret    = crypt.dhsecret(crypt.base64decode(self.readline()),
                                    clientkey)
 
@@ -227,7 +244,7 @@ function Robot:login()
   print("sceret is ", crypt.hexencode(secret))
 
   local hmac      = crypt.hmac64(challenge, secret)
-  proto.writeline(self.fd, crypt.base64encode(hmac))
+  protoline.writeline(self.fd, crypt.base64encode(hmac))
 
   local function encode_token(token)
     return string.format("%s@%s:%s", crypt.base64encode(token.user),
@@ -237,7 +254,7 @@ function Robot:login()
 
   local etoken    = crypt.desencode(secret, encode_token(self.token))
   local b         = crypt.base64encode(etoken)
-  proto.writeline(self.fd, crypt.base64encode(etoken))
+  protoline.writeline(self.fd, crypt.base64encode(etoken))
 
   local result    = self.readline()
   print(result)
@@ -261,9 +278,11 @@ function Robot:game()
                                   crypt.base64encode(self.token.server),
                                   crypt.base64encode(self.subid), self.index)
   local hmac      = crypt.hmac64(crypt.hashkey(handshake), self.secret)
+  self.net = self.serial == "pb" and require("client.protopb") or
+               require("client.protopackage")
 
-  self.readpackage = proto.unpacker_package(self.fd)
-  proto.send_package(self.fd, handshake .. ":" .. crypt.base64encode(hmac))
+  self.readpackage = unpack(self.net.unpack_package, self.fd)
+  self.net.send_package(self.fd, handshake .. ":" .. crypt.base64encode(hmac))
 
   print(self.readpackage())
   -- proto.send_request(self.fd, "echo", self.index)
