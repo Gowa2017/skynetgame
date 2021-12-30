@@ -11,9 +11,9 @@ local tconcat      = table.concat
 ---We package our data in protobuf format, and, the final format is
 ---* | 2 byte        | 2 byte       |  < 65535 byte|
 ---* |package length | message type | message data |
----* If we use the gate or gateserver to receive data, the data we received
+---* If we use the msgserver or gateserver to receive data, the data we received
 ---from it does not include the package length, or we use the socket module,
----we need firest read the 2 bytes of package legnth the, the last continue
+---we need first read the 2 bytes of package legnth the, then last continue
 ---bytes is data and session
 ---* The module need a pb binary file, and a table or module which defined the
 ---message type's integer ID which we will use to unpack the probobuff package.
@@ -27,10 +27,10 @@ local protomap
 ---@param protoFile? string pb二进制文件路径
 ---@param protoDef? string 协议号定义文件
 function M.init(protoFile, protoDef)
-  local pbio = require "pb.io"
-  protoFile = protoFile or skynet.getenv("protoFile")
+  assert(protoFile and type(protoFile) == "string",
+         "Need protoFile and must a string")
   protoDef = protoDef or skynet.getenv("protoMap")
-  pb.load(pbio.read(protoFile))
+  pb.load(protoFile)
   protomap = loadfile(protoDef, "bt")()
 end
 
@@ -97,7 +97,9 @@ end
 ---@return string @group 或错误消息
 ---@return string? cmd
 function M.unpack(msg, sz)
-  if type(msg) ~= "string" then msg = netpack.tostring(msg, sz) end
+  if type(msg) ~= "string" then
+    msg = netpack.tostring(msg, sz)
+  end
   return M.unpackString(msg)
 end
 
