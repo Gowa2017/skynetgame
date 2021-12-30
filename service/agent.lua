@@ -3,7 +3,9 @@ local message       = require("conf.message")
 local LOG           = require("go.logger")
 
 local net           = require("netproto")
-net.init()
+local sharepb       = skynet.getenv("protoFile")
+local sharetable    = require("skynet.sharetable")
+
 local gate         
 local userid, subid
 local CMD           = {}
@@ -54,4 +56,5 @@ skynet.dispatch("lua", function(session, source, cmd, ...)
   skynet.retpack(f(source, ...))
 end)
 skynet.start(function()
+  net.init(sharetable.query(sharepb).schema)
 end)
