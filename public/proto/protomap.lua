@@ -21,10 +21,10 @@ return {
     ["s2c.login.Resp"] = 10005,
   },
   s2cbyid = {
-    [10001] = { "s2c", "game", "Scene" },
-    [10002] = { "s2c", "game", "SceneEntitys" },
     [10003] = { "s2c", "login", "Challenge" },
     [10004] = { "s2c", "login", "Key" },
     [10005] = { "s2c", "login", "Resp" },
+    [10001] = { "s2c", "game", "Scene" },
+    [10002] = { "s2c", "game", "SceneEntitys" },
   },
 }

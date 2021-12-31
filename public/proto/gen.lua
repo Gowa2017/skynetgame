@@ -1,5 +1,6 @@
 --- used to gen proto message's lua presention
 package.cpath = package.cpath .. ";../../luaclib/?.so"
+package.path = package.path .. ";../../3rd/Penlight/lua/?.lua"
 local pb             = require("pb")
 local pbio           = require("pb.io")
 
