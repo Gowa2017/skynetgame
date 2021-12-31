@@ -2,6 +2,7 @@ local msgserver    = require "snax.msgserver"
 local crypt        = require "skynet.crypt"
 local skynet       = require "skynet"
 local LOG          = require("go.logger")
+local agentpool    = require("agentpool")
 
 local loginservice = tonumber(...)
 
@@ -22,7 +23,7 @@ function server.login_handler(uid, secret)
   local username = msgserver.username(uid, id, servername)
 
   -- you can use a pool to alloc new agent
-  local agent    = skynet.call(".agentpool", "lua", "get", uid)
+  local agent    = agentpool.get(uid)
   local u        = {
     username = username,
     agent    = agent,
