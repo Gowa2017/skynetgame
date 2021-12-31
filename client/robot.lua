@@ -163,7 +163,12 @@ end
 ---* 4 调用 handler
 function Robot:check_net_package()
   while true do
-    local resp, content, session, t = self.net.recv_response(self.readpackage())
+    local ok, data                  = pcall(self.readpackage)
+    if not ok then
+      self.running = false
+      print(data)
+    end
+    local resp, content, session, t = self.net.recv_response(data)
     local co                        = self.session_cos[session]
     coroutine.resume(co, content)
     self.session_cos[session] = nil
@@ -187,6 +192,9 @@ function Robot:check_console()
   if s == "." then
     s = "c2s.game.Enter map \"1001\""
   end
+  if not s:find("%.") then
+    s = "c2s.game." .. s
+  end
   local ok, cmd, args = self:parse_cmd(s)
   if not ok then
     return
@@ -195,6 +203,10 @@ function Robot:check_console()
   local co            = coroutine.create(function(...)
     print("run command", ...)
     local ok, r = pcall(self.net.send_request, ...)
+    if not ok then
+      print(r)
+      return
+    end
     local resp  = coroutine.yield()
     for k, v in pairs(resp) do
       print(k, v)
