@@ -15,6 +15,7 @@ function CMD.login(source, uid, sid, secret)
   gate = source
   userid = uid
   subid = sid
+  LOG.info("%s logined", userid)
   -- you may load user data from database
 end
 
@@ -42,13 +43,15 @@ function GAME.Enter(data)
   local sid        = skynet.call(".world", "lua", "userScene",
                                  { map = 1001, uid = 2 })
   local desc, npcs = skynet.call(sid, "lua", "enter", { map = 1001, uid = 2 })
+  -- return desc
   return net.packString("s2c.game.Scene",
                         { desc = desc, map  = 1001, npcs = npcs })
 end
 
 skynet.register_protocol(message.client)
-skynet.dispatch("client", function(_, _, cmd, subcmd, ...)
-  local f = assert(GAME[subcmd])
+skynet.dispatch("client", function(_, _, module, cmd, ...)
+  print(cmd)
+  local f = assert(GAME[cmd])
   skynet.ret(f(...))
 end)
 skynet.dispatch("lua", function(session, source, cmd, ...)

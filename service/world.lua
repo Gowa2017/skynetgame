@@ -14,10 +14,11 @@ function CMD.userScene(user)
   return s
 end
 
-skynet.dispatch("lua", function(session, source, cmd, ...)
+skynet.dispatch("lua", function(_, _, cmd, ...)
   local f = assert(CMD[cmd])
   skynet.retpack(f(...))
 end)
+
 skynet.start(function()
   local res = sharetable.query(skynet.getenv "daobiao")
   for i = 1, 3 do
