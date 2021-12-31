@@ -27,19 +27,19 @@ return {
     id     = skynet.PTYPE_CLIENT,
     name   = "client",
     -- line base
-    unpack = function(msg, sz)
-      local str = skynet.tostring(msg, sz)
-      print(str)
-      local t   = {}
-      for s in string.gmatch(str, "[%a%w]+") do
-        table.insert(t, s)
-      end
-      return table.unpack(t)
+    -- unpack = function(msg, sz)
+    --   local str = skynet.tostring(msg, sz)
+    --   print(str)
+    --   local t   = {}
+    --   for s in string.gmatch(str, "[%a%w]+") do
+    --     table.insert(t, s)
+    --   end
+    --   return table.unpack(t)
 
-    end,
-    -- unpack = function(...)
-    --   return netproto.unpackString(skynet.tostring(...))
     -- end,
+    unpack = function(...)
+      return netproto.unpackString(skynet.tostring(...))
+    end,
   },
   logic  = {
     id     = 100,
