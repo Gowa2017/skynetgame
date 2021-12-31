@@ -1,5 +1,6 @@
 local protopb   = require "client.protopb"
 package.cpath = package.path .. ";./skynet/luaclib/?.so"
+package.path = package.path .. ";3rd/Penlight/lua/?.lua"
 local socket    = require "client.socket"
 local crypt     = require "client.crypt"
 
@@ -100,45 +101,30 @@ function Robot:handle_server_request(name, args)
 end
 
 ---parse commands
----@param s string
+---@param input string
 ---@return boolean
 ---@return string
 ---@return any
-function Robot:parse_cmd(s)
-  local cmd  = ""
-  local args = nil
-  local b, e = string.find(s, " ")
-  if b then
-    cmd = s:sub(0, b - 1)
-    args = s:sub(e + 1)
-  else
-    cmd = s
+function Robot:parse_cmd(input)
+  local t    = {}
+  for s in string.gmatch(input, "[%a%w%.]+") do
+    table.insert(t, s)
   end
-  if cmd == "script" then
-    if not args then
-      print("illegal cmd", s)
-      return false
-    end
-    return true, cmd, args
+  if #t < 1 then
+    return false, "非法指令"
   end
 
-  if args then
-    local f, err    = load("return " .. args)
-    if f == nil then
-      print("illegal cmd", s)
-      return false
-    end
-
-    local ok, _args = pcall(f)
-    if (not ok) or (type(_args) ~= "table") then
-      print("illegal cmd", s)
-      return false
-    end
-
-    args = _args
+  if #t % 2 == 0 then
+    return false, "指令必须是基数个"
   end
-
-  return true, cmd, args
+  if #t == 1 then
+    return true, input
+  end
+  local args = {}
+  for i = 2, #t, 2 do
+    args[t[i]] = t[i + 1]
+  end
+  return true, t[1], args
 end
 
 --- 执行命令，实际上这个就是向服务端发送消息
@@ -186,8 +172,11 @@ function Robot:check_net_package()
 end
 
 ---读取标准输入的数据
+---. will run the default cmd
+---script will run a script
+---other will be a command
 function Robot:check_console()
-  local s  = socket.readstdin()
+  local s             = socket.readstdin()
   if not s or #s == 0 then
     return
   end
@@ -196,24 +185,23 @@ function Robot:check_console()
     return
   end
   if s == "." then
-    s = [[C2GSGMCmd {cmd="runtest"}]]
+    s = "c2s.game.Enter map \"1001\""
   end
-  local co = coroutine.create(function(...)
-    print("run command")
-    self:run_cmd(s)
-    print(coroutine.yield())
+  local ok, cmd, args = self:parse_cmd(s)
+  if not ok then
+    return
+  end
+  self.index = self.index + 1
+  local co            = coroutine.create(function(...)
+    print("run command", ...)
+    local ok, r = pcall(self.net.send_request, ...)
+    local resp  = coroutine.yield()
+    for k, v in pairs(resp) do
+      print(k, v)
+    end
   end)
   self.session_cos[self.index] = co
-  coroutine.resume(co)
-  -- self:fork(self.run_cmd, self, s)
-  -- local ok, cmd, args = self:parse_cmd(s)
-  -- if ok then
-  --   if cmd == "script" then
-  --     self:fork(self.run_script, self, args)
-  --   else
-  --     self:fork(self.run_cmd, self, cmd, args)
-  --   end
-  -- end
+  coroutine.resume(co, self.fd, args, self.index, cmd)
 end
 
 ---读取网络和标准输入的输入
@@ -278,8 +266,7 @@ function Robot:game()
                                   crypt.base64encode(self.token.server),
                                   crypt.base64encode(self.subid), self.index)
   local hmac      = crypt.hmac64(crypt.hashkey(handshake), self.secret)
-  self.net = self.serial == "pb" and require("client.protopb") or
-               require("client.protopackage")
+  self.net = self.serial == "pb" and protopb or require("client.protopackage")
 
   self.readpackage = unpack(self.net.unpack_package, self.fd)
   self.net.send_package(self.fd, handshake .. ":" .. crypt.base64encode(hmac))

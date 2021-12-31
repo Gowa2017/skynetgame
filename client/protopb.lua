@@ -2,14 +2,13 @@ local socket    = require("client.socket")
 local proto_map = require("public.proto.protomap")
 local pb        = require("pb")
 local pbio      = require("pb.io")
-
 pb.load(pbio.read("public/proto/proto.pb"))
 
 local M         = {}
 --- game server
 --- send data with 2byte length header and 4 byte session id tail
 ---@param id integer socket id
----@param m string binary data
+---@param m table message table
 ---@param session integer session id
 ---@param t string messagetype
 ---@return string  v binary data sended
@@ -17,7 +16,7 @@ local M         = {}
 function M.send_request(id, m, session, t)
   local msg_type =
     assert(proto_map["c2s"][t], string.format("no message %s", t))
-  local v        = pb.ecnode(t, m)
+  local v        = pb.encode(t, m)
   local size     = 2 + #v + 4
   local package  = string.pack(">I2>I2", size, msg_type) .. v ..
                      string.pack(">I4", session)
@@ -32,12 +31,12 @@ end
 ---@return string content data
 ---@return string message type
 function M.recv_response(v)
-  local size                           = #v - 5
+  local size                           = #v - 7
   local msg_type, content, ok, session = string.unpack(
                                            ">I2c" .. tostring(size) .. "B>I4", v)
-  local msg                            = pb.decode(
-                                           proto_map["s2cbyid"][msg_type],
-                                           content)
+  assert(proto_map["s2cbyid"][msg_type], string.format("no msg %d", msg_type))
+  local msg                            =
+    pb.decode(table.concat(proto_map["s2cbyid"][msg_type], "."), content)
   return ok ~= 0, msg, session
 end
 
