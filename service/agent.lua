@@ -23,7 +23,6 @@ local function logout()
   if gate then
     skynet.call(gate, "lua", "logout", userid, subid)
   end
-  skynet.call(".agentpool", "lua", "exit", skynet.self())
   skynet.exit()
 end
 
@@ -50,7 +49,6 @@ end
 
 skynet.register_protocol(message.client)
 skynet.dispatch("client", function(_, _, module, cmd, ...)
-  print(cmd)
   local f = assert(GAME[cmd])
   skynet.ret(f(...))
 end)

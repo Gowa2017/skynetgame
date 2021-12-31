@@ -53,6 +53,7 @@ function server.logout_handler(uid, subid)
     users[uid] = nil
     username_map[u.username] = nil
     skynet.call(loginservice, "lua", "logout", uid, subid)
+    agentpool.quit(uid)
   end
 end
 
