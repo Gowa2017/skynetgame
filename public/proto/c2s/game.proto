@@ -10,3 +10,7 @@ message Enter {
   string msg = 2;
   string map = 3;
 }
+
+message Quit {
+  uint32 time = 1;
+}

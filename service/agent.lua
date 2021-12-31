@@ -47,6 +47,11 @@ function GAME.Enter(data)
                         { desc = desc, map  = 1001, npcs = npcs })
 end
 
+function GAME.Quit(d)
+  logout()
+  return net.packString("s2c.game.Save", { version = 1 })
+end
+
 skynet.register_protocol(message.client)
 skynet.dispatch("client", function(_, _, module, cmd, ...)
   local f = assert(GAME[cmd])
