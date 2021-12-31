@@ -8,4 +8,5 @@ message Logon {
 message Enter {
   uint32 time = 1;
   string msg = 2;
+  string map = 3;
 }
