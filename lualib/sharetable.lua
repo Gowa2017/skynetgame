@@ -20,3 +20,5 @@ function M.query(filename)
   end
   return setmetatable({ filename = filename, box      = t }, _mt)
 end
+
+return M
