@@ -6,21 +6,18 @@ local function pool_service()
   local pool      = {}
   local uid_agent = { n = 0 }
   local agent_uid = { n = 0 }
+  local agent     = skynet.getenv "agent"
 
   local function checker()
-    LOG.info("pool size %d, used %d", #pool, uid_agent.n)
     if #pool < min then
-      for i = 1, min - #pool do
-        pool[#pool + 1] = skynet.newservice("agent")
-      end
+      LOG.info("pool size %d, used %d", #pool, uid_agent.n)
+      for i = 1, min - #pool do pool[#pool + 1] = skynet.newservice(agent) end
     end
   end
 
   local CMD       = {}
   function CMD.get(uid)
-    if uid_agent[uid] then
-      return uid_agent[uid]
-    end
+    if uid_agent[uid] then return uid_agent[uid] end
     local a = table.remove(pool)
     uid_agent[uid] = a
     uid_agent.n = uid_agent.n + 1

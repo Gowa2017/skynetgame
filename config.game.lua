@@ -25,4 +25,6 @@ protoFile   = 'public/proto/sharepb.lua'
 protoMap    = 'public/proto/protomap.lua'
 daobiao     = 'public/daobiao/server.lua'
 mode        = 'G'
+proto       = 'line'
+agent       = 'agentline'
 -- LuaFormatter on

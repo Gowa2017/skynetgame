@@ -86,9 +86,7 @@ function Robot:sleep(n)
   tinsert(self.timers, waiter)
 
   while true do
-    if waiter.done then
-      break
-    end
+    if waiter.done then break end
 
     coroutine.yield()
   end
@@ -107,23 +105,13 @@ end
 ---@return any
 function Robot:parse_cmd(input)
   local t    = {}
-  for s in string.gmatch(input, "[%a%w%.]+") do
-    table.insert(t, s)
-  end
-  if #t < 1 then
-    return false, "非法指令"
-  end
+  for s in string.gmatch(input, "[%a%w%.]+") do table.insert(t, s) end
+  if #t < 1 then return false, "非法指令" end
 
-  if #t % 2 == 0 then
-    return false, "指令必须是基数个"
-  end
-  if #t == 1 then
-    return true, input
-  end
+  if #t % 2 == 0 then return false, "指令必须是基数个" end
+  if #t == 1 then return true, input end
   local args = {}
-  for i = 2, #t, 2 do
-    args[t[i]] = t[i + 1]
-  end
+  for i = 2, #t, 2 do args[t[i]] = t[i + 1] end
   return true, t[1], args
 end
 
@@ -139,9 +127,7 @@ end
 
 --- 这个执行脚本会在一个新线程中进行加载
 function Robot:run_script(script)
-  if not self.slient then
-    print("[script]", script)
-  end
+  if not self.slient then print("[script]", script) end
 
   local env       = setmetatable({ client = self }, { __index = _ENV })
 
@@ -182,21 +168,23 @@ end
 ---other will be a command
 function Robot:check_console()
   local s             = socket.readstdin()
-  if not s or #s == 0 then
-    return
-  end
+  if not s or #s == 0 then return end
   if s == "quit" then
     self.running = false
     return
   end
   if s == "." then
-    s = "c2s.game.Enter map \"1001\""
+    s = self.serial == "pb" and "c2s.game.Enter map \"1001\"" or "enter"
   end
-  if not s:find("%.") then
-    s = "c2s.game." .. s
+  if not s:find("%.") and self.serial == "pb" then s = "c2s.game." .. s end
+  local ok, cmd, args
+  if self.serial == "pb" then
+    ok, cmd, args = self:parse_cmd(s)
+  else
+    ok, args, cmd = true, s, nil
   end
-  local ok, cmd, args = self:parse_cmd(s)
   if not ok then
+    print(cmd)
     return
   end
   self.index = self.index + 1
@@ -208,9 +196,8 @@ function Robot:check_console()
       return
     end
     local resp  = coroutine.yield()
-    for k, v in pairs(resp) do
-      print(k, v)
-    end
+    print(resp)
+    for k, v in pairs(resp) do print(k, v) end
   end)
   self.session_cos[self.index] = co
   coroutine.resume(co, self.fd, args, self.index, cmd)
@@ -309,9 +296,7 @@ function Robot:start()
 
     for _, co in ipairs(co_normal) do
       -- double check co status
-      if coroutine.status(co) ~= "dead" then
-        coroutine.resume(co)
-      end
+      if coroutine.status(co) ~= "dead" then coroutine.resume(co) end
     end
 
     for co, _ in pairs(co_deaded) do
@@ -322,9 +307,7 @@ function Robot:start()
           break
         end
       end
-      if target_idx then
-        tremove(self.coroutines, target_idx)
-      end
+      if target_idx then tremove(self.coroutines, target_idx) end
     end
 
     -- check timer
