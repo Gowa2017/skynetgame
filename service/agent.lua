@@ -28,13 +28,13 @@ end
 
 function CMD.logout(source)
   -- NOTICE: The logout MAY be reentry
-  skynet.error(string.format("%s is logout", userid))
+  LOG.info("%s is logout", userid)
   logout()
 end
 
 function CMD.afk(source)
   -- the connection is broken, but the user may back
-  skynet.error(string.format("AFK"))
+  LOG.info("AFK")
 end
 
 local GAME          = {}

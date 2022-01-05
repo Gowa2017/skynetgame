@@ -39,8 +39,7 @@ function server.auth_handler(token)
 end
 
 function server.login_handler(server, uid, secret)
-  print(string.format("%s@%s is login, secret is %s", uid, server,
-                      crypt.hexencode(secret)))
+  LOG.info("%s@%s is login, secret is %s", uid, server, crypt.hexencode(secret))
   local gameserver = assert(server_list[server], "Unknown server")
   -- only one can login, because disallow multilogin
   local last       = user_online[uid]
@@ -66,7 +65,7 @@ end
 function CMD.logout(uid, subid)
   local u = user_online[uid]
   if u then
-    print(string.format("%s@%s is logout", uid, u.server))
+    LOG.info("%s@%s is logout", uid, u.server)
     user_online[uid] = nil
   end
 end

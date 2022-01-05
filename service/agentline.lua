@@ -16,19 +16,21 @@ function CMD.login(source, uid, sid, secret)
 end
 
 local function logout()
-  if gate then skynet.call(gate, "lua", "logout", userid, subid) end
+  if gate then
+    skynet.call(gate, "lua", "logout", userid, subid)
+  end
   skynet.exit()
 end
 
 function CMD.logout(source)
   -- NOTICE: The logout MAY be reentry
-  skynet.error(string.format("%s is logout", userid))
+  LOG.info("%s is logout", userid)
   logout()
 end
 
 function CMD.afk(source)
   -- the connection is broken, but the user may back
-  skynet.error(string.format("AFK"))
+  LOG.info("%s AFK", userid)
 end
 
 local GAME          = {}
@@ -51,7 +53,6 @@ skynet.start(function()
   skynet.register_protocol(message.client)
 
   skynet.dispatch("client", function(_, _, cmd, ...)
-    print(cmd, ...)
     local f = assert(GAME[cmd])
     skynet.ret(f(...))
   end)
