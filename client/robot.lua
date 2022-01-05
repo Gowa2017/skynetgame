@@ -3,6 +3,7 @@ package.cpath = package.path .. ";./skynet/luaclib/?.so"
 package.path = package.path .. ";3rd/Penlight/lua/?.lua"
 local socket    = require "client.socket"
 local crypt     = require "client.crypt"
+local class     = require("class")
 
 local tinsert   = table.insert
 local tremove   = table.remove
@@ -29,35 +30,26 @@ end
 ---@field callers table @调用着
 ---@field server_request_handlers table @消息处理器
 ---@field running boolean @是否运行中
-local Robot     = {}
+local Robot     = class("Robot")
 
-function Robot.new(host, port, gamehost, gameport, opts)
-  assert(host, "need host")
-  assert(port, "need port")
-  assert(gamehost, "need gamehost")
-  assert(gameport, "need gameport")
+function Robot:_init(opts)
   opts = opts or {}
-  local obj = {
-    gamehost                = gamehost,
-    gameport                = gameport,
-    host                    = host,
-    port                    = port,
-    fd                      = assert(socket.connect(host, port)),
-    last                    = "",
-    slient                  = opts.slient,
-    -- shield = {},
-    coroutines              = {},
-    session_cos             = {},
-    timers                  = {},
-    callers                 = {},
-    server_request_handlers = {},
-    running                 = true,
-    token                   = { server = "sample", user   = "a", pass   = "b" },
-    index                   = 1,
-    serial                  = opts.serial or "line",
-  }
-  setmetatable(obj, { __index = Robot })
-  return obj
+  self.host = assert(opts.loginhost, "need host")
+  self.port = assert(opts.loginport, "need port")
+  self.gamehost = assert(opts.gamehost, "need gamehost")
+  self.gameport = assert(opts.gameport, "need gameport")
+  self.fd = assert(socket.connect(self.host, self.port))
+  self.last = ""
+  self.slient = opts.slient
+  self.coroutines = {}
+  self.session_cos = {}
+  self.timers = {}
+  self.callers = {}
+  self.server_request_handlers = {}
+  self.running = true
+  self.token = { server = "sample", user   = opts.user, pass   = opts.pass }
+  self.index = 1
+  self.proto = opts.proto or "line"
 end
 
 --- 建立一个协程来执行函数
@@ -78,36 +70,26 @@ function Robot:sleep(n)
     done = false,
     time = os.time() + n,
   }
-
   tinsert(self.timers, waiter)
-
   while true do
     if waiter.done then
       break
     end
-
     coroutine.yield()
   end
 end
-
----响应服务端数据
----@param name string
----@param args boolean|table
-function Robot:handle_server_request(name, args)
-end
-
 ---parse commands
 ---@param input string
 ---@return boolean
 ---@return string
 ---@return any
 function Robot:parse_cmd(input)
-  if self.serial == "line" then
+  if self.proto == "line" then
     return true, nil, input
   end
   local t    = {}
   for s in string.gmatch(input, "[%a%w%.]+") do
-    table.insert(t, s)
+    tinsert(t, s)
   end
   if #t < 1 then
     return false, "非法指令"
@@ -131,7 +113,6 @@ end
 ---@param args table | string @协议数据
 ---@return boolean
 function Robot:run_cmd(cmd, args)
-  -- self.index = self.index + 1
   local v = args and (cmd .. " " .. args) or cmd
   self.net.send_request(self.fd, v, self.index)
 end
@@ -149,7 +130,6 @@ function Robot:run_script(script)
     print("load script fail, err", err)
     return
   end
-
   safeCall(func)
 end
 
@@ -162,16 +142,15 @@ end
 ---* 4 调用 handler
 function Robot:check_net_package()
   while true do
-    local ok, data                  = pcall(self.readpackage)
+    local ok, data                    = pcall(self.readpackage)
     if not ok then
       self.running = false
-      print(data)
+      print("read package err", data)
     end
-    local resp, content, session, t = self.net.recv_response(data)
-    local co                        = self.session_cos[session]
-    coroutine.resume(co, content)
+    local respok, content, session, t = self.net.recv_response(data)
+    local co                          = self.session_cos[session]
+    coroutine.resume(co, respok, content)
     self.session_cos[session] = nil
-    -- coroutine.yield()
   end
 end
 
@@ -189,32 +168,33 @@ function Robot:check_console()
     return
   end
   if s == "." then
-    s = self.serial == "pb" and "c2s.game.Enter map \"1001\"" or "enter 1001"
+    s = self.proto == "pb" and "c2s.game.Enter map \"1001\"" or "enter 1001"
   end
-  if not s:find("%.") and self.serial == "pb" then
+  if not s:find("%.") and self.proto == "pb" then
     s = "c2s.game." .. s
   end
   local ok, cmd, args = self:parse_cmd(s)
   if not ok then
-    print(cmd)
+    print("parse cmd err", cmd)
     return
   end
-  self.index = self.index + 1
+  local index         = self.index + 1
+  self.index = index
   local co            = coroutine.create(function(...)
-    print("run command", ...)
-    local ok, r = pcall(self.net.send_request, ...)
+    print("Send request", ...)
+    local ok, r           = pcall(self.net.send_request, ...)
     if not ok then
-      print(r)
+      print("request error", r)
       return
     end
-    local resp  = coroutine.yield()
-    print(resp)
-    for k, v in pairs(resp) do
+    local respok, content = coroutine.yield()
+    print("resp", respok, content)
+    for k, v in pairs(content) do
       print(k, v)
     end
   end)
-  self.session_cos[self.index] = co
-  coroutine.resume(co, self.fd, args, self.index, cmd)
+  self.session_cos[index] = co
+  coroutine.resume(co, self.fd, args, index, cmd)
 end
 
 ---读取网络和标准输入的输入
@@ -223,7 +203,6 @@ function Robot:check_io()
     while self.running do
       self:check_console()
       coroutine.yield()
-      -- wait next
     end
   end)
   if not ok then
@@ -232,10 +211,10 @@ function Robot:check_io()
   end
 end
 function Robot:login()
-  print("login....", self.fd)
+  print("login....", self.fd, self.token.user, self.token.pass)
   self.readline = unpack(protoline.unpack_line, self.fd)
   local challenge = crypt.base64decode(self.readline())
-  print("chanllenge", challenge)
+  print("Server chanllenge", challenge)
   local clientkey = crypt.randomkey()
   protoline.writeline(self.fd, crypt.base64encode(crypt.dhexchange(clientkey)))
   local secret    = crypt.dhsecret(crypt.base64decode(self.readline()),
@@ -258,10 +237,13 @@ function Robot:login()
   protoline.writeline(self.fd, crypt.base64encode(etoken))
 
   local result    = self.readline()
-  print(result)
   local code      = tonumber(string.sub(result, 1, 3))
-  assert(code == 200)
   socket.close(self.fd)
+  if code ~= 200 then
+    self.running = false
+    error("login failed")
+    return
+  end
   local subid     = crypt.base64decode(string.sub(result, 5))
   self.subid = subid
   print("login ok, subid=", subid)
@@ -270,7 +252,7 @@ function Robot:login()
 end
 
 function Robot:game()
-  print("connect to game server")
+  print("connectting to game server")
   self.fd = assert(socket.connect(self.gamehost, self.gameport))
   self.last = ""
 
@@ -279,14 +261,12 @@ function Robot:game()
                                   crypt.base64encode(self.token.server),
                                   crypt.base64encode(self.subid), self.index)
   local hmac      = crypt.hmac64(crypt.hashkey(handshake), self.secret)
-  self.net = self.serial == "pb" and protopb or require("client.protopackage")
+  self.net = self.proto == "pb" and protopb or require("client.protopackage")
 
   self.readpackage = unpack(self.net.unpack_package, self.fd)
   self.net.send_package(self.fd, handshake .. ":" .. crypt.base64encode(hmac))
 
   print(self.readpackage())
-  -- proto.send_request(self.fd, "echo", self.index)
-  -- self.index = self.index + 1
   self:fork(self.check_net_package, self)
 end
 ---主循环，执行换一个循环后即让出，由 client 再次调度过来
@@ -311,7 +291,10 @@ function Robot:start()
     for _, co in ipairs(co_normal) do
       -- double check co status
       if coroutine.status(co) ~= "dead" then
-        coroutine.resume(co)
+        local ok, err = pcall(coroutine.resume, co)
+        if not ok then
+          print("robot err", err)
+        end
       end
     end
 
