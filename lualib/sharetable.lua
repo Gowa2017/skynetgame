@@ -15,9 +15,7 @@ function M.share(filename)
 end
 function M.query(filename)
   local t = sharetable.query(filename)
-  if not t then
-    error(string.format("No this sharetable %s", filename))
-  end
+  assert(t, string.format("No this sharetable %s", filename))
   return setmetatable({ filename = filename, box      = t }, _mt)
 end
 

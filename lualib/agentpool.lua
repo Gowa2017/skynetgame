@@ -22,6 +22,9 @@ local function pool_service()
     if uid_agent[uid] then
       return uid_agent[uid]
     end
+    if #pool < min // 2 then
+      checker()
+    end
     local a = table.remove(pool)
     uid_agent[uid] = a
     uid_agent.n = uid_agent.n + 1
@@ -31,7 +34,7 @@ local function pool_service()
   end
 
   function CMD.quit(uid)
-    skynet.error(string.format("%s quited", uid))
+    LOG.info("%s quited", uid)
     local agent = uid_agent[uid]
     uid_agent[uid] = nil
     agent_uid[agent] = nil
