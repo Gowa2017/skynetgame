@@ -1,7 +1,7 @@
 local skynet     = require("skynet")
 require "skynet.manager"
 local sharetable = require("skynet.sharetable")
-local redisproxy = require("redisproxy")
+local agentpool  = require("agentpool")
 
 skynet.start(function()
   -- share pb file
@@ -26,4 +26,5 @@ skynet.start(function()
 
   local a     = skynet.newservice("redis")
   local t     = skynet.call(a, "lua", "subscribe", "test")
+  agentpool.start(skynet.getenv("agentPool") or 50)
 end)

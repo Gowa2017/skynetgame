@@ -2,7 +2,7 @@ local function pool_service()
   local skynet    = require("skynet")
   require "skynet.manager"
   local timer     = require("go.timer")
-  local min       = skynet.getenv("agentPool") or 20
+  local min       = 20
   local pool      = {}
   local uid_agent = { n = 0 }
   local agent_uid = { n = 0 }
@@ -11,13 +11,17 @@ local function pool_service()
   local function checker()
     if #pool < min then
       LOG.info("pool size %d, used %d", #pool, uid_agent.n)
-      for i = 1, min - #pool do pool[#pool + 1] = skynet.newservice(agent) end
+      for i = 1, min - #pool do
+        pool[#pool + 1] = skynet.newservice(agent)
+      end
     end
   end
 
   local CMD       = {}
   function CMD.get(uid)
-    if uid_agent[uid] then return uid_agent[uid] end
+    if uid_agent[uid] then
+      return uid_agent[uid]
+    end
     local a = table.remove(pool)
     uid_agent[uid] = a
     uid_agent.n = uid_agent.n + 1
@@ -35,11 +39,15 @@ local function pool_service()
     agent_uid.n = agent_uid.n - 1
   end
 
+  function CMD.start(n)
+    min = n or min
+    checker()
+  end
+
   skynet.dispatch("lua", function(_, source, cmd, ...)
     local f = assert(CMD[cmd], string.format("No cmd %s", cmd))
     skynet.retpack(f(...))
   end)
-  checker()
   timer.start()
   timer.period(100, checker)
 end
@@ -63,5 +71,8 @@ end
 
 function pool.quit(uid)
   return skynet.call(pool.address, "lua", "quit", uid)
+end
+function pool.start(n)
+  return skynet.call(pool.address, "lua", "start", n)
 end
 return pool

@@ -28,4 +28,5 @@ mode        = 'G'
 proto       = 'line'
 agent       = 'agentline'
 autoreg     = true
+agentPool   = 500
 -- LuaFormatter on
