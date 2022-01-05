@@ -40,7 +40,7 @@ local function pool_service()
   end
 
   function CMD.start(n)
-    min = n or min
+    min = tonumber(n) or min
     checker()
   end
 
