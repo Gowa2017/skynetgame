@@ -45,6 +45,7 @@ end
 
 -- call by agent
 function server.logout_handler(uid, subid)
+  LOG.info("Logout %s %s", uid, subid)
   local u = users[uid]
   if u then
     local username = msgserver.username(uid, subid, servername)
