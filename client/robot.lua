@@ -12,6 +12,17 @@ local tconcat   = table.concat
 local unpack    = require("client.unpack")
 local protoline = require("client.protoline")
 
+local tprint    = print
+
+local debug     = false
+local function print(...)
+  if not debug then
+    return
+  end
+  tprint(...)
+
+end
+
 function safeCall(f, ...)
   return xpcall(f, debug.traceback, ...)
 end
@@ -57,7 +68,7 @@ end
 function Robot:fork(func, ...)
   local args = { ... }
   local co   = coroutine.create(function()
-    safeCall(func, tunpack(args))
+    assert(pcall(func, tunpack(args)))
   end)
   tinsert(self.coroutines, co)
 end
@@ -145,11 +156,11 @@ function Robot:check_net_package()
     local ok, data                    = pcall(self.readpackage)
     if not ok then
       self.running = false
-      print("read package err", data)
+      error(data)
     end
     local respok, content, session, t = self.net.recv_response(data)
     local co                          = self.session_cos[session]
-    coroutine.resume(co, respok, content)
+    assert(coroutine.resume(co, respok, content))
     self.session_cos[session] = nil
   end
 end
@@ -188,9 +199,12 @@ function Robot:check_console()
       return
     end
     local respok, content = coroutine.yield()
-    print("resp", respok, content)
-    for k, v in pairs(content) do
-      print(k, v)
+    if self.proto == "line" then
+      tprint("resp", respok, content)
+    else
+      for k, v in pairs(content) do
+        tprint(k, v)
+      end
     end
   end)
   self.session_cos[index] = co
@@ -271,7 +285,6 @@ function Robot:game()
 end
 ---主循环，执行换一个循环后即让出，由 client 再次调度过来
 function Robot:start()
-  print("start...")
   self:fork(self.check_io, self)
   self:fork(self.login, self)
   while self.running do
@@ -291,10 +304,7 @@ function Robot:start()
     for _, co in ipairs(co_normal) do
       -- double check co status
       if coroutine.status(co) ~= "dead" then
-        local ok, err = pcall(coroutine.resume, co)
-        if not ok then
-          print("robot err", err)
-        end
+        assert(coroutine.resume(co))
       end
     end
 
@@ -333,7 +343,7 @@ function Robot:start()
       end
     end
 
-    coroutine.yield()
+    coroutine.yield "SUSPEND"
   end
 end
 

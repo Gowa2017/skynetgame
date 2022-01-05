@@ -3,39 +3,47 @@ package.cpath = "./skynet/luaclib/?.so"
 local socket   = require("client.socket")
 local argparse = require "client.argparse"
 
-local clients  = {}
+local clients  = { n = 0 }
 local deaded   = {}
 local function client(idx, conf)
   conf.user = conf.flag .. tostring(idx)
   conf.pass = conf.flag .. tostring(idx)
   local r  = Robot(conf)
   local co = coroutine.create(function()
-    local ok, err = r:start()
-    if not ok then
-      print("robo err", err)
-    end
+    r:start()
   end)
-  clients[co] = true
+  clients[co] = conf.user
+  clients.n = clients.n + 1
 end
 
 local function run()
   while true do
     for co, _ in pairs(clients) do
+      if type(co) ~= "thread" then
+        goto continue
+      end
       if coroutine.status(co) == "dead" then
         deaded[co] = true
       else
+        --- here we catch the robot's error
         local ok, err = coroutine.resume(co)
         if not ok then
-          print("ERROR:", err)
+          print(clients[co], err)
           deaded[co] = true
         end
       end
-
+      ::continue::
     end
     for co, _ in pairs(deaded) do
       clients[co] = nil
+      clients.n = clients.n - 1
     end
-    socket.usleep(1 * 1000 * 100)
+    deaded = {}
+    if clients.n < 1 then
+      return
+    end
+    print("Clients:", clients.n)
+    socket.usleep(1 * 1000 * 1000)
   end
 end
 
