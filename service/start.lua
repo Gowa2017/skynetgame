@@ -1,6 +1,7 @@
 local skynet     = require("skynet")
 require "skynet.manager"
 local sharetable = require("skynet.sharetable")
+local redisproxy = require("redisproxy")
 
 skynet.start(function()
   -- share pb file
@@ -10,9 +11,6 @@ skynet.start(function()
 
   -- debug console
   skynet.newservice("debug_console", 7001)
-
-  -- agent pool
-  skynet.newservice("agentpool")
 
   skynet.newservice("world")
 
@@ -25,4 +23,7 @@ skynet.start(function()
   skynet.name(".mysql", addr)
   addr = skynet.newservice("testmongodb")
   skynet.name(".accdb", addr)
+
+  local a     = skynet.newservice("redis")
+  local t     = skynet.call(a, "lua", "subscribe", "test")
 end)
