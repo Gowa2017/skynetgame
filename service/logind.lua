@@ -22,6 +22,7 @@ local accdb       = dbproxy.wrap(".accdb")
 local server_list = {}
 local user_online = {}
 local user_login  = {}
+local autoreg     = skynet.getenv "autoreg"
 
 function server.auth_handler(token)
   -- the token is base64(user)@base64(server):base64(password)
@@ -32,7 +33,15 @@ function server.auth_handler(token)
   print(user, server, password)
   local ok, res                = accdb:findOne("account", { username = user })
   if not ok then
-    error("User does not exists")
+    if not autoreg then
+      error("User does not exists")
+    end
+    ok, res = accdb:insert("account", { username = user, password = password })
+    if not ok then
+      error("User does not exists")
+    end
+    LOG.info("Auto register :%s, %s", user, password)
+    ok, res = accdb:findOne("account", { username = user })
   end
   assert(password == res.password, "Password mismath")
   return server, user

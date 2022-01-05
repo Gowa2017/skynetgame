@@ -27,4 +27,5 @@ daobiao     = 'public/daobiao/server.lua'
 mode        = 'G'
 proto       = 'line'
 agent       = 'agentline'
+autoreg     = true
 -- LuaFormatter on
