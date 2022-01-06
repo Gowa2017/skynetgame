@@ -23,7 +23,12 @@ function M.connect(conf, watchhandler)
       if watch[cmd] then
         skynet.retpack(watch[cmd](watch, ...))
       else
-        skynet.retpack(db[cmd](db, ...))
+        local ok, res = pcall(db[cmd], db, ...)
+        if not ok then
+          LOG.error(res)
+          return skynet.retpack(false)
+        end
+        skynet.retpack(res)
       end
     end)
   end)
