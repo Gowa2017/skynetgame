@@ -13,7 +13,6 @@
 local error, getmetatable, io, pairs, rawget, rawset, setmetatable, tostring, type =
   _G.error, _G.getmetatable, _G.io, _G.pairs, _G.rawget, _G.rawset,
   _G.setmetatable, _G.tostring, _G.type
-local compat                                                                      
 
 -- this trickery is necessary to prevent the inheritance of 'super' and
 -- the resulting recursive call problems.
@@ -27,8 +26,9 @@ local function call_ctor(c, obj, ...)
       parent_with_init = rawget(parent_with_init, "_parent_with_init")
     end
     if parent_with_init then -- super() points to one above whereever _init came from
-      rawset(obj, "super",
-             function(obj, ...) call_ctor(parent_with_init, obj, ...) end)
+      rawset(obj, "super", function(obj, ...)
+        call_ctor(parent_with_init, obj, ...)
+      end)
     end
   else
     -- Without this, calling super() where none exists will sometimes loop and stack overflow
@@ -76,9 +76,13 @@ local function is_a(self, klass)
     return getmetatable(self)
   end
   local m = getmetatable(self)
-  if not m then return false end -- *can't be an object!
+  if not m then
+    return false
+  end -- *can't be an object!
   while m do
-    if m == klass then return true end
+    if m == klass then
+      return true
+    end
     m = rawget(m, "_base")
   end
   return false
@@ -94,7 +98,9 @@ end
 --   -- it's true
 -- end
 local function class_of(klass, obj)
-  if type(klass) ~= "table" or not rawget(klass, "is_a") then return false end
+  if type(klass) ~= "table" or not rawget(klass, "is_a") then
+    return false
+  end
   return klass.is_a(obj, klass)
 end
 
@@ -102,7 +108,9 @@ end
 -- It is not clever (or safe!) so use carefully.
 -- @param some_instance the object to be changed
 -- @function some_class:cast
-local function cast(klass, obj) return setmetatable(obj, klass) end
+local function cast(klass, obj)
+  return setmetatable(obj, klass)
+end
 
 local function _class_tostring(obj)
   local mt   = obj._class
@@ -110,16 +118,24 @@ local function _class_tostring(obj)
   setmetatable(obj, nil)
   local str  = tostring(obj)
   setmetatable(obj, mt)
-  if name then str = name .. str:gsub("table", "") end
+  if name then
+    str = name .. str:gsub("table", "")
+  end
   return str
 end
 
 local function tupdate(td, ts, dont_override)
   for k, v in pairs(ts) do
-    if not dont_override or td[k] == nil then td[k] = v end
+    if not dont_override or td[k] == nil then
+      td[k] = v
+    end
   end
 end
 
+---@param base? Class | table if it is a plain table, it can have a _base field
+---@param c_arg? any
+---@param c? table a table as we constucted class, or it will get a new table of Class
+---@return any
 local function _class(base, c_arg, c)
   -- the class `c` will be the metatable for all its objects,
   -- and they will look up their methods in it.
@@ -139,7 +155,9 @@ local function _class(base, c_arg, c)
     tupdate(c, base, plain)
     c._base = base
     -- inherit the 'not found' handler, if present
-    if rawget(c, "_handler") then mt.__index = c._handler end
+    if rawget(c, "_handler") then
+      mt.__index = c._handler
+    end
   elseif base ~= nil then
     error("must derive from a table type", 3)
   end
@@ -147,17 +165,25 @@ local function _class(base, c_arg, c)
   c.__index = c
   setmetatable(c, mt)
   if not plain then
-    if base and rawget(base, "_init") then c._parent_with_init = base end -- For super and inherited init
+    if base and rawget(base, "_init") then
+      c._parent_with_init = base
+    end -- For super and inherited init
     c._init = nil
   end
 
-  if base and rawget(base, "_class_init") then base._class_init(c, c_arg) end
+  if base and rawget(base, "_class_init") then
+    base._class_init(c, c_arg)
+  end
 
   -- expose a ctor which can be called by <classname>(<args>)
   mt.__call = function(class_tbl, ...)
     local obj
-    if rawget(c, "_create") then obj = c._create(...) end
-    if not obj then obj = {} end
+    if rawget(c, "_create") then
+      obj = c._create(...)
+    end
+    if not obj then
+      obj = {}
+    end
     setmetatable(obj, c)
 
     if rawget(c, "_init") or rawget(c, "_parent_with_init") then -- constructor exists
@@ -168,7 +194,9 @@ local function _class(base, c_arg, c)
       end
     end
 
-    if base and rawget(base, "_post_init") then base._post_init(obj) end
+    if base and rawget(base, "_post_init") then
+      base._post_init(obj)
+    end
 
     return obj
   end
@@ -186,23 +214,36 @@ local function _class(base, c_arg, c)
   c.cast = cast
   c._class = c
 
-  if not rawget(c, "__tostring") then c.__tostring = _class_tostring end
+  if not rawget(c, "__tostring") then
+    c.__tostring = _class_tostring
+  end
 
   return c
 end
+
+---@class Class
+---@field _name string class name
+---@field _create fun(...):Class create function
+---@field _init? fun(...):Class init function
+---@field _post_init? fun(...):Class post init function
+---@field is_a fun(self:table,kclass:Class):boolean:Class  self is drived from `Class`?
+---@field class_of fun(kclass:Class,obj:table):boolean:Class kclass is the super of obj?
 
 local classes                                                                      =
   {}
 --- create a new class, derived from a given base class.
 ---@param name string @classname
----@param base? Class | table #base class
+---@param base? Class | table #base class, it can a table of methods
 ---@param c_arg? any parameter to class constructor
 ---@param c? table # table to be used as class
+---@type fun(name:string,base:table,c_arg:any,c:table):Class
 local class                                                                       
 class = setmetatable({}, {
-  __call = function(fun, name, ...)
+  __call = function(_, name, ...)
     assert(name and type(name) == "string", "Must give a string as class name")
-    if classes[name] then return classes[name] end
+    if classes[name] then
+      return classes[name]
+    end
     local c = _class(...)
     c._name = name
     return c
