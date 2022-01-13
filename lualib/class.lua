@@ -221,11 +221,11 @@ local function _class(base, c_arg, c)
   return c
 end
 
+---* field _name string class name
+---* field _create fun(...):Class create function
+---* field _init? fun(...):Class init function
+---* field _post_init? fun(...):Class post init function
 ---@class Class
----@field _name string class name
----@field _create fun(...):Class create function
----@field _init? fun(...):Class init function
----@field _post_init? fun(...):Class post init function
 ---@field is_a fun(self:table,kclass:Class):boolean:Class  self is drived from `Class`?
 ---@field class_of fun(kclass:Class,obj:table):boolean:Class kclass is the super of obj?
 
