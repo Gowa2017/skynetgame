@@ -28,5 +28,9 @@ mode        = 'G'
 proto       = 'line'
 agent       = 'agentline'
 autoreg     = true
-agentPool   = 500
+agentPool   = 5
+
+--- bunldes config
+bundles     = './bundles'
+loader      =  bundles .. '/loader.lua'
 -- LuaFormatter on
