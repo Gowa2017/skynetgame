@@ -16,3 +16,6 @@
 [submodule "3rd/lua-zset"]
 	path = 3rd/lua-zset
 	url = https://github.com/xjdrew/lua-zset.git
+[submodule "3rd/luafilesystem"]
+	path = 3rd/luafilesystem
+	url = https://github.com/keplerproject/luafilesystem.git

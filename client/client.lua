@@ -42,8 +42,8 @@ local function run()
     if clients.n < 1 then
       return
     end
-    print("Clients:", clients.n)
-    socket.usleep(1 * 1000 * 1000)
+    -- print("Clients:", clients.n)
+    socket.usleep(1 * 100 * 1000)
   end
 end
 

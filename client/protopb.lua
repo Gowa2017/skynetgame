@@ -13,7 +13,7 @@ local M         = {}
 ---@param t string messagetype
 ---@return string  v binary data sended
 ---@return integer session session id
-function M.send_request(id, m, session, t)
+function M.send_request(id, session, m, t)
   local msg_type =
     assert(proto_map["c2s"][t], string.format("no message %s", t))
   local v        = pb.encode(t, m)

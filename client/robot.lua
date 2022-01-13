@@ -14,11 +14,7 @@ local protoline = require("client.protoline")
 
 local tprint    = print
 
-local debug     = false
 local function print(...)
-  if not debug then
-    return
-  end
   tprint(...)
 
 end
@@ -41,6 +37,7 @@ end
 ---@field callers table @调用着
 ---@field server_request_handlers table @消息处理器
 ---@field running boolean @是否运行中
+---@field script string autorun script
 local Robot     = class("Robot")
 
 function Robot:_init(opts)
@@ -61,6 +58,7 @@ function Robot:_init(opts)
   self.token = { server = "sample", user   = opts.user, pass   = opts.pass }
   self.index = 1
   self.proto = opts.proto or "line"
+  self.script = opts.script
 end
 
 --- 建立一个协程来执行函数
@@ -189,9 +187,13 @@ function Robot:check_console()
     print("parse cmd err", cmd)
     return
   end
-  local index         = self.index + 1
+  self:call(args, cmd)
+end
+
+function Robot:call(...)
+  local index = self.index + 1
   self.index = index
-  local co            = coroutine.create(function(...)
+  local co    = coroutine.create(function(...)
     print("Send request", ...)
     local ok, r           = pcall(self.net.send_request, ...)
     if not ok then
@@ -200,7 +202,7 @@ function Robot:check_console()
     end
     local respok, content = coroutine.yield()
     if self.proto == "line" then
-      tprint("resp", respok, content)
+      tprint(self.token.user, "resp", respok, content)
     else
       for k, v in pairs(content) do
         tprint(k, v)
@@ -208,9 +210,8 @@ function Robot:check_console()
     end
   end)
   self.session_cos[index] = co
-  coroutine.resume(co, self.fd, args, index, cmd)
+  coroutine.resume(co, self.fd, index, ...)
 end
-
 ---读取网络和标准输入的输入
 function Robot:check_io()
   local ok, err = pcall(function()
@@ -282,6 +283,9 @@ function Robot:game()
 
   print(self.readpackage())
   self:fork(self.check_net_package, self)
+  if self.script then
+    dofile(string.format("./client/script/%s.lua", self.script))(self)
+  end
 end
 ---主循环，执行换一个循环后即让出，由 client 再次调度过来
 function Robot:start()
