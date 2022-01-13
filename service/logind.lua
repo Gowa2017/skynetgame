@@ -19,7 +19,7 @@ skynet.register_protocol {
   unpack = skynet.unpack,
 }
 
-local accdb       = dbproxy.wrap(".accdb")
+local accdb       = dbproxy.wrap(".db")
 local server_list = {}
 local user_online = {}
 local user_login  = {}
@@ -31,7 +31,6 @@ function server.auth_handler(token)
   user = crypt.base64decode(user)
   server = crypt.base64decode(server)
   password = crypt.base64decode(password)
-  print(user, server, password)
   local ok, res                = accdb:findOne("account", { username = user })
   if not ok then
     if not autoreg then
