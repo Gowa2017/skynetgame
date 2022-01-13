@@ -8,7 +8,7 @@ luaservice  = root .. "service/?.lua;" .. root .. "service/?/main.lua;" ..
               root .. "service/test/?.lua"
 lua_path    = root .. "lualib/?.lua;" .. root .. "lualib/?/init.lua;" ..
               skynet .. "lualib/?.lua;" ..
-              skynetgo .. "?.lua"
+              skynetgo .. "?.lua;./?.lua"
 lua_cpath   = root .. "luaclib/?.so;" .. skynet .. "luaclib/?.so;" ..
               skynetgo .. "luaclib/?.so"
 cpath       = root .. "cservice/?.so;" .. skynet .. "cservice/?.so"
