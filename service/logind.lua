@@ -2,6 +2,7 @@ local login       = require "snax.loginserver"
 local crypt       = require "skynet.crypt"
 local skynet      = require "skynet"
 local dbproxy     = require("dbproxy")
+local LOG         = require("go.logger")
 
 local server      = {
   host       = "127.0.0.1",

@@ -1,6 +1,7 @@
 local function pool_service()
   local skynet    = require("skynet")
-  require "skynet.manager"
+  local LOG       = require("go.logger")
+
   local timer     = require("go.timer")
   local min       = 20
   local pool      = {}
