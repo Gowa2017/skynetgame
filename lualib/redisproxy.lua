@@ -1,5 +1,6 @@
 local skynet = require("skynet")
 local redis  = require("skynet.db.redis")
+local LOG    = require("go.logger")
 
 local M      = {}
 
