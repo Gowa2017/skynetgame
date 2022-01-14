@@ -226,6 +226,7 @@ end
 ---* field _init? fun(...):Class init function
 ---* field _post_init? fun(...):Class post init function
 ---@class Class
+---@field super? fun(self,...)  points to one above whereever _init came from
 ---@field is_a fun(self:table,kclass:Class):boolean:Class  self is drived from `Class`?
 ---@field class_of fun(kclass:Class,obj:table):boolean:Class kclass is the super of obj?
 
