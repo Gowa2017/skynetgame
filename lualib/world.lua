@@ -15,6 +15,9 @@ function world_service()
   function CMD.finduser(_, uid)
 
   end
+  function CMD.query(_, ref)
+    return area_services[ref]
+  end
   skynet.start(function()
     local state = sharetable.query(skynet.getenv("loader"))
     for k, _ in pairs(state.Areas) do
@@ -56,6 +59,11 @@ end
 ---enter world
 function M.enter(roomRef, uid)
   return skynet.call(world.address, "lua", "enter", roomRef, uid)
+end
+
+function M.query(ref)
+  ref = ref:find(":") and ref:sub(1, ref:find(":") - 1) or ref
+  return skynet.call(world.address, "lua", "query", ref)
 end
 
 function M.finduser(uid)
