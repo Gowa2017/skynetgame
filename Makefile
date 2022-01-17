@@ -30,7 +30,7 @@ engine:
 go:
 	make -C skynetgo LUAINC=`pwd`/$(LUAINC)
 
-LUACLIBS=pb protobuf skiplist
+LUACLIBS=pb protobuf skiplist lfs ecs
 LUACLIB_TARGET=$(patsubst %, $(LUACLIB_DIR)/%.so, $(LUACLIBS))
 
 libs: $(LUACLIB_TARGET)
@@ -43,12 +43,19 @@ $(LUACLIB_DIR)/protobuf.so: 3rd/pbc/binding/lua53/pbc-lua53.c
 $(LUACLIB_DIR)/skiplist.so: 3rd/lua-zset/*.c
 	$(CC) $(CFLAGS) $(SHARED) -o $@ $^ -I$(LUAINC)
 	install 3rd/lua-zset/zset.lua lualib
-
+$(LUACLIB_DIR)/lfs.so: 3rd/luafilesystem/src/lfs.c
+	MACOSX_DEPLOYMENT_TARGET=$(MACOSX_DEPLOYMENT_TARGET)
+	export MACOSX_DEPLOYMENT_TARGET
+	$(CC) $(CFLAGS) $(SHARED) -o $@ $^ -I$(LUAINC)
+$(LUACLIB_DIR)/ecs.so: 3rd/luaecs/luaecs.c
+	$(CC) $(CFLAGS) $(SHARED) -o $@ $^ -I$(LUAINC)
+	install 3rd/luaecs/ecs.lua lualib
 clean:
 	make -C 3rd/pbc clean
 	make -C $(SKYNETDIR) clean
 	rm -f $(LUACLIB_TARGET)
 	rm -f lualib/zset.lua
+	rm -f lualib/ecs.lua
 
 cleanall: clean
 	make -C $(SKYNETDIR) cleanall
