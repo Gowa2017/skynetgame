@@ -1,0 +1,21 @@
+@startuml LoginNode
+skinparam DefaultFontName WenQuanYi Zen Hei
+skinparam DefaultMonospacedFontName UbuntuMono
+
+!include C4_Dynamic.puml
+Person(user, "User","User web, andorid, ios application to connection to game or login")
+Container(gameNode, "GameNode", "Skynet","When logout or disconnect will notify loginserver")
+ContainerDb(accdb, "AccoutDB", "Mongodb")
+Container_Boundary(loginNode, "LoginNode"){
+    Component(logind, "Logind", "Lua","接受客户端新连接 调用Auth进行认证 接收GameNode注册消息 进行登录成功后处理 接收GameNode下线消息")
+    Component(auth, "Auth", "Lua","密钥协商 执行认证结果返回Logind")
+}
+Rel_L(gameNode,logind,"Register")
+Rel_U(user, logind, "Connect and handshake","TCP,Line base")
+Rel_L(logind, auth, "Transmit fd and call auth","call")
+Rel_U(user, auth, "authdata","TCP")
+Rel_D(accdb, auth,"Read account data")
+Rel_R(auth, logind,"Return auth result")
+Rel_R(logind, gameNode,"Notify uid and secret","login")
+Rel_L(gameNode,logind,"Notify logout","logout")
+@enduml
