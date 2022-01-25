@@ -1,6 +1,7 @@
 @startuml Skynet
 !include C4_Component.puml
 !include C4_Dynamic.puml
+title Skynet 逻辑架构图
 HIDE_STEREOTYPE()
 Container_Boundary(core, "Core"){
   Component(worker, "WorkerThread", "C",)
@@ -22,8 +23,8 @@ Container_Boundary(snlua2, "SNLUA"){
 
 Rel_U(ss, socket, "handle")
 Rel_U(socket, service1mq, "push")
-Rel_D(service1mq, worker, "pop")
-Rel_U(worker, service1lua, "callback, dispatch_message")
 Rel_R(timer, service1mq, "push")
 Rel(service2lua, service1mq,"push")
+Rel_D(service1mq, worker, "pop")
+Rel_U(worker, service1lua, "callback, dispatch_message")
 @enduml
