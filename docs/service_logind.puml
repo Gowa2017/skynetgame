@@ -1,0 +1,27 @@
+@startuml Logind
+!include Skynet.puml
+!include C4_Dynamic.puml
+Person(user, "User")
+Container(gamenode, "GameNode", "Skynet")
+Container_Boundary(skynet, "Skynet"){
+    Service(db,"Account DB","","MongoDB")
+    Service(ss,"SocketServer","C")
+    Service_Boundary(master, "Master"){
+        Fun(login_handler,"login_handler")
+        Fun(accept,"Accept")
+    }
+    Service_Boundary(slave,"Slaves") {
+        Service(auth,"Auth","无状态服务") {
+            Fun(auth_handler,"auth_handler")
+        }
+    }
+}
+
+
+Rel_U(user, ss, "TCP")
+Rel_U(ss, accept,"callback")
+Rel_L(accept, auth, "dispatch to slave to auth","call")
+Rel_U(auth_handler, db, "Query")
+Rel_R(accept,login_handler,"call login_handler")
+Rel_R(login_handler, gamenode, "notify")
+@enduml
