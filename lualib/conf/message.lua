@@ -1,7 +1,8 @@
 local skynet   = require("skynet")
-local netproto = require("netproto")
 local tconcat  = table.concat
 local tunpack  = table.unpack
+local netproto
+local unpack  
 
 local function pbunpack(...)
   return netproto.unpackString(skynet.tostring(...))
@@ -10,19 +11,30 @@ end
 local function lineunpack(msg, sz)
   local str = skynet.tostring(msg, sz)
   local t   = {}
-  for s in string.gmatch(str, "[%a%w]+") do table.insert(t, s) end
+  for s in string.gmatch(str, "[%a%w]+") do
+    table.insert(t, s)
+  end
   return tunpack(t)
 end
 
-local unpack   = skynet.getenv("proto") == "pb" and pbunpack or lineunpack
+if skynet.getenv("proto") == "pb" then
+  netproto = require("netproto")
+  unpack = pbunpack
+else
+  unpack = lineunpack
+end
 return {
   text   = {
     id     = skynet.PTYPE_TEXT,
     name   = "text",
     pack   = function(...)
       local n = select("#", ...)
-      if n == 0 then return "" end
-      if n == 1 then return tostring(...) end
+      if n == 0 then
+        return ""
+      end
+      if n == 1 then
+        return tostring(...)
+      end
       return tconcat({ ... }, " ")
     end,
     unpack = skynet.tostring,
