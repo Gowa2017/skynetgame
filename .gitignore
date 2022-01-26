@@ -54,3 +54,5 @@ Mkfile.old
 dkms.conf
 lualib/zset.lua
 .vscode
+core
+bundles
