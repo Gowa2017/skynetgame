@@ -13,6 +13,7 @@ local unpack    = require("client.unpack")
 local protoline = require("client.protoline")
 
 local tprint    = print
+local notisess 
 
 local function print(...)
   tprint(...)
@@ -160,6 +161,9 @@ function Robot:check_net_package()
     local co                          = self.session_cos[session]
     assert(coroutine.resume(co, respok, content))
     self.session_cos[session] = nil
+    if session == notifysession then
+      notifysession = self:call("notify")
+    end
   end
 end
 
@@ -208,9 +212,11 @@ function Robot:call(...)
         tprint(k, v)
       end
     end
+    return ...
   end)
   self.session_cos[index] = co
   coroutine.resume(co, self.fd, index, ...)
+  return index
 end
 ---读取网络和标准输入的输入
 function Robot:check_io()
@@ -283,6 +289,7 @@ function Robot:game()
 
   print(self.readpackage())
   self:fork(self.check_net_package, self)
+  notifysession = self:call("notify")
   if self.script then
     dofile(string.format("./client/script/%s.lua", self.script))(self)
   end
