@@ -56,3 +56,4 @@ lualib/zset.lua
 .vscode
 core
 bundles
+lualib/ecs.lua
