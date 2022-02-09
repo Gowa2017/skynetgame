@@ -73,19 +73,23 @@ function M.mongo(conf, handler)
       cur:close()
       return true, res
     end
+
     function cmd.findOne(c, query, selector)
       local r = db[c]:findOne(query, selector)
       return r and true or false, r or false
     end
+
     function cmd.update(c, selector, update, upsert, multi)
       local ok, err, r = db[c]:safe_update(selector, { ["$set"] = update },
                                            upsert, multi)
       return ok, ok and r or err
     end
+
     function cmd.delete(c, selector, single)
       local ok, err, r = db[c]:safe_delete(selector, single)
       return ok, ok and r or err
     end
+
     function cmd.insert(c, doc)
       local ok, err, r = db[c]:safe_insert(doc)
       return ok, ok and r or err
@@ -99,6 +103,7 @@ function M.mongo(conf, handler)
         return false, r
       end
     end
+
     skynet.dispatch("lua", function(_, _, action, ...)
       local ok, res
       if handler and handler[action] then
@@ -145,18 +150,21 @@ function M.mysql(opts, handler)
       end
       return cond
     end
+
     function cmd.find(c, query, selector)
       local sql = sfmt("select %%s from  %s where %%s", c)
       sql = sfmt(sql, selector and tconcat(selector, ",") or "*",
                  tconcat(kv_equal(query), " and "))
       return db:query(sql)
     end
+
     function cmd.findOne(c, query, selector)
       local sql = sfmt("select %%s from  %s where %%s limit 1", c)
       sql = sfmt(sql, selector and tconcat(selector, ",") or "*",
                  tconcat(kv_equal(query), " and "))
       return db:query(sql)
     end
+
     function cmd.update(c, selector, update, upsert, multi)
       local sql = multi and sfmt("update %s set %%s where %%s", c) or
                     sfmt("update %s set %%s where %%s limit 1", c)
@@ -164,12 +172,14 @@ function M.mysql(opts, handler)
                  tconcat(kv_equal(selector), " and "))
       return db:query(sql)
     end
+
     function cmd.delete(c, selector, single)
       local sql = single and sfmt("delete from  %s where %%s limit 1", c) or
                     sfmt("delete from  %s where %%s", c)
       sql = sfmt(sql, tconcat(kv_equal(selector), " and "))
       return db:query(sql)
     end
+
     function cmd.insert(c, document)
       local sql = sfmt("insert into %s(%%s) values(%%s)", c)
       sql = sfmt(sql, kv_list(document))
@@ -179,6 +189,7 @@ function M.mysql(opts, handler)
     function cmd.exec(sql)
       return db:query(sql)
     end
+
     skynet.dispatch("lua", function(_, _, action, ...)
       local ok, res
       if handler and handler[action] then
@@ -199,6 +210,7 @@ function M.mysql(opts, handler)
   end)
 
 end
+
 ---Used to wrappe a db proxy service, will can direct call it
 ---@param addr any
 function M.wrap(addr)

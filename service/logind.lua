@@ -36,13 +36,16 @@ function server.auth_handler(token)
     if not autoreg then
       error("User does not exists")
     end
+
     ok, res = accdb:insert("account", { username = user, password = password })
     if not ok then
       error("User does not exists")
     end
+
     LOG.info("Auto register :%s, %s", user, password)
     ok, res = accdb:findOne("account", { username = user })
   end
+
   assert(password == res.password, "Password mismath")
   return server, user
 end
@@ -55,6 +58,7 @@ function server.login_handler(server, uid, secret)
   if last then
     skynet.call(last.address, "lua", "kick", uid, last.subid)
   end
+
   if user_online[uid] then
     error(string.format("user %s is already online", uid))
   end

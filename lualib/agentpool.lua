@@ -76,7 +76,9 @@ end
 function pool.quit(uid)
   return skynet.call(pool.address, "lua", "quit", uid)
 end
+
 function pool.start(n)
   return skynet.call(pool.address, "lua", "start", n)
 end
+
 return pool

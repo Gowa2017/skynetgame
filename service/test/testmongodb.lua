@@ -9,6 +9,7 @@ function handler.register(db, username, password)
   })
   return ok, ok and r or err
 end
+
 dbproxy.mongo({
   host     = "127.0.0.1",
   port     = 27017,

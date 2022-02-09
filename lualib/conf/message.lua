@@ -7,6 +7,7 @@ local unpack
 local function pbunpack(...)
   return netproto.unpackString(skynet.tostring(...))
 end
+
 -- line base
 local function lineunpack(msg, sz)
   local str = skynet.tostring(msg, sz)
@@ -23,6 +24,7 @@ if skynet.getenv("proto") == "pb" then
 else
   unpack = lineunpack
 end
+
 return {
   text   = {
     id     = skynet.PTYPE_TEXT,
@@ -63,5 +65,4 @@ return {
     pack   = skynet.pack,
     unpack = skynet.unpack,
   },
-
 }

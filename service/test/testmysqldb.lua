@@ -13,6 +13,7 @@ function handler.register(db, username, password)
   return db:execute(stmt, username, password)
 
 end
+
 dbproxy.mysql({
   host     = "localhost",
   user     = "root",

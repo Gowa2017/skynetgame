@@ -4,27 +4,28 @@ function world_service()
   local area_services = {}
   local users         = {}
 
-  local CMD           = {}
+  local CMD = {}
   function CMD.enter(source, roomRef, uid)
     users[uid] = { agent = source }
     local area, room = roomRef:match("(.*):(.*)")
-    local s          = area_services[area]
-    return s, skynet.call(s, "lua", "enter", room, uid)
+    return area_services[area]
   end
 
   function CMD.finduser(_, uid)
 
   end
+
   function CMD.query(_, ref)
     return area_services[ref]
   end
+
   skynet.start(function()
     local state = sharetable.query(skynet.getenv("loader"))
     for k, _ in pairs(state.Areas) do
       area_services[k] = skynet.newservice("scene", k)
     end
     skynet.dispatch("lua", function(_, source, cmd, ...)
-      local f = assert(CMD[cmd])
+      local f = assert(CMD[cmd], string.format("CMD %s not found", cmd))
       skynet.retpack(f(source, ...))
     end)
   end)
@@ -49,8 +50,9 @@ local function load_service(t, key)
     return nil
   end
 end
-local world   = setmetatable({},
-                             { __index = load_service, __gc    = report_close })
+
+local world = setmetatable({},
+  { __index = load_service, __gc = report_close })
 
 function M.start()
   service.new("world", world_service)
@@ -69,4 +71,5 @@ end
 function M.finduser(uid)
   return skynet.call(world.address, "lua", "finduser", uid)
 end
+
 return M
