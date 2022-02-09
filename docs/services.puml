@@ -1,0 +1,26 @@
+@startuml Skynet Mud Service Detail
+title Skynet Mud Service Detail
+!include Skynet.puml
+
+
+Service_Boundary(service,"Service") {
+Table(cmds,"Commands","客户端请求 控制指令 响应客户端的请求或者是控制指令")
+Table(msgs,"Messages","游戏逻辑消息 处理游戏各相关服务间的逻辑")
+Table(evts,"Events","对象事件 只处理对象相关的数据 不与外部通信",)
+LObject(objs,"Objects","Player, Npc, Item, Room 相当于内存数据")
+
+
+}
+
+Service(srv1, "其他服务1")
+Service(srv2, "其他服务2")
+Service(gated,"网关服务")
+
+Rel_R(gated, cmds," Agent 请求")
+Rel_D(msgs, srv1,"")
+Rel_D(cmds, srv2,"")
+
+Rel_U(objs, evts, "发射")
+Rel_U(cmds, objs, "操纵")
+Rel_U(msgs, objs, "操纵")
+@enduml

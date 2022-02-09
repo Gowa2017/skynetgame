@@ -1,0 +1,35 @@
+@startuml ECS
+title ECS服务架构
+!include C4_Dynamic.puml
+!include C4_Code.puml
+
+AddRelTag("redirect",$lineColor="blue")
+AddRelTag("opt",$lineColor="Gray",$lineStyle=DashedLine(), $techn="可能会")
+Component(core, "SkynetCore", "C")
+
+Component_Boundary(scene, "Scene"){
+    rectangle systems
+    rectangle entitys
+    rectangle messages
+}
+
+Component(war, "War", "Lua")
+Component(gate, "Gated", "Lua")
+Component(agent, "Agent", "Lua")
+
+Person(user, "User")
+
+
+Rel_R(messages, entitys, "modify",$tags="opt")
+Rel_L(core, systems, "timeout")
+Rel_R(entitys, systems,"read，可以，但最好不要修改，需要自己管理复杂性")
+
+
+Rel_U(user, gate, "request")
+Rel_U(gate, agent, "client","rawcall")
+Rel(agent, gate, "返回")
+Rel_L(agent, war, "战斗消息","redirect",$tags="redirect")
+Rel(war, gate, "返回",$tags="redirect")
+Rel_R(agent, scene, "场景消息","redirect",$tags="redirect")
+Rel(scene, gate, "返回",$tags="redirect")
+@enduml

@@ -1,0 +1,20 @@
+@startuml Agent
+title Agent
+!include Skynet.puml
+Service(gated,"Gated")
+Service(world,"World")
+Service(db,"DB")
+AddRelTag("dashed",$lineStyle="dashed",$legendText="可能会")
+Service_Boundary(agent,"Agent") {
+    LObject(player,"Player")
+    Table(commands,"Commands","处理客户端的请求 潜在的需要向其他服务通信")
+    Table(events,"Events","处理玩家身上的事件 由其他服务的消息 客户端的请求触发")
+    Table(messages,"Messages","处理其他服务发送的消息 也可能向其他服务发送消息")
+    Rel_U(commands, player, "操纵",$tags="dashed")
+    Rel_U(player, events, "发射事件","emit",$tags="dashed")
+}
+
+Rel_U(gated, commands, "message","skynet.call client")
+Rel_R(area, messages,"message","skynetcall game")
+Rel_R(messages, player, "操纵",$tags="dashed")
+@enduml
