@@ -2,7 +2,8 @@
 ' skinparam DefaultFontName WenQuanYi Zen Hei
 ' skinparam DefaultMonospacedFontName UbuntuMono-R
 !include C4_Component.puml
-!include C4_Dynamic.puml
+
+AddRelTag("redirect",$textColor="blue",$lineColor="blue")
 Person(user, "User","User web, andorid, ios application to connection to game or login")
 ContainerDb(gameDb, "GameDB", "Mongodb")
 Container(loginServer, "LoginNode", "Skynet","Auth and notify gameserver")
@@ -13,18 +14,23 @@ Container_Boundary(gameServer, "GameNode"){
     Component(scene, "Scene", "Lua","Manage all entitys(NPC, Player, Item, Event, ...)")
     Component(share, "ShareTable", "Lua","Share read only infos, every service can clone a table from the service by a pointer")
     Component(persist, "Persist", "Lua","Read and save data to database, or we should persist the data to database by a timer?, and a queue to save the data waitting to be persist")
+    Component(ap, "Agent Pool", "Lua")
     Component(war, "War", "Lua","Manage battle[s].")
 }
 
-Rel_R(gated,loginServer,"Register")
-Rel(world,scene,"Newservice")
-Rel_L(loginServer, gated,"Notify uid, secret","login")
-Rel_U(gated, agent,"New","login")
+Rel(world,scene,"Start N scene service","newservice")
+Rel_R(gated,loginServer,"Register to","call")
+Rel(ap, agent, "Start N agent","newservice")
+Rel_L(loginServer, gated, "Notify uid, secret","call")
+Rel_U(gated, ap, "Get a agent","call")
+Rel_U(gated, agent,"login","call")
 Rel_D(gameDb, persist,"Load/Write")
 Rel_D(persist, agent,"Load player data")
 Rel_U(user, gated,"Connect Handshake Request","TCP,line base handshake, protobuf request")
 Rel_U(gated, agent,"Request","rawcall")
 Rel_L(agent,world,"Query map scene info","call")
-Rel_D(agent,scene,"Enter scene")
-Rel_Neighbor(gated,loginServer,"logout")
+Rel_D(agent,scene,"Event","call")
+Rel_D(agent,scene,"Client scene message","redirect",$tags="redirect")
+Rel_R(scene, gated, "message","redirect ret",$tags="redirect")
+Rel_Neighbor(gated,loginServer,"logout","call")
 @enduml

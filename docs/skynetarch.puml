@@ -12,11 +12,11 @@ Container_Boundary(core, "Core"){
 }
 
 Container_Boundary(snlua1, "SNLUA"){
-    Component(service1mq, "ServiceMQ", "C")
+    ComponentQueue(service1mq, "ServiceMQ", "C")
     Component(service1lua, "LuaState", "Lua")
 }
 Container_Boundary(snlua2, "SNLUA"){
-    Component(service2mq, "ServiceMQ", "C")
+    ComponentQueue(service2mq, "ServiceMQ", "C")
     Component(service2lua, "LuaState", "Lua")
 }
 
