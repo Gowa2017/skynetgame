@@ -2,21 +2,21 @@
 !include Lua.puml
 title Service Gated
 Container(loginnode, "LoginNode", "Skynet")
-LService(agent,"Agent","玩家代理")
-LService(core,"Skynet Core")
+LService(agent,"Agent","","玩家代理")
+LService(core,"Skynet Core","","引擎核心")
 LService_Boundary(gateservice,"网关服务") {
     LModule_Boundary(gated,"Gated") {
-        LTable(handlers,"Handlers", "login_handler logout_handler kick_handler disconnect_handler request_handler register_handler")
+        LTable(handlers,"Handlers", "","login_handler logout_handler kick_handler disconnect_handler request_handler register_handler")
     }
     LModule_Boundary(gateserver,"GateServer") {
         LTable(socketevhandler,"sockethandler","data\nmore\nopen\nclose\nerror\nwarning")
         LTable(gscmd,"cmd","open\nclose")
-        LTable(gsfun,"functions","openclient\ncloseclient")
+        LTable(gsfun,"functions","","openclient\ncloseclient")
     }
 
     LModule_Boundary(msgserver,"MsgServer") {
-        LTable(msgcmd,"cmd","cmd handler from the gated handlers")
-        LTable(msghandler,"msghandler","open\nconnect\ncommand\ndisconnect\nerror\nmessage")
+        LTable(msgcmd,"cmd","","cmd handler from the gated handlers")
+        LTable(msghandler,"msghandler","","open\nconnect\ncommand\ndisconnect\nerror\nmessage")
         LTable(msgfun,"functions")
         LFunction(auth,"auth")
         LFunction(request,"request")

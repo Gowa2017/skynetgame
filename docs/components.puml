@@ -1,0 +1,6 @@
+@startuml Components
+class Movement
+class Position
+class Attribute
+class Name
+@enduml
