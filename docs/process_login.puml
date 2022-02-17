@@ -1,6 +1,6 @@
 @startuml Login Process
 !include C4_Component.puml
-' !include C4_Dynamic.puml
+!include C4_Dynamic.puml
 title Login Process
 
 AddRelTag("opt",$lineStyle=DashedLine())
@@ -16,6 +16,7 @@ Container_Boundary(gamenode, "GameNode"){
     Component(agent, "Agent", "Lua")
     Component(gm, "GM", "Lua")
     Component(db, "DB", "MongoDb")
+    Component(ap, "AgentPool", "Lua")
 }
 
 Person(user, "User")
@@ -23,6 +24,7 @@ Person(user, "User")
 Rel_U(user, logind, "connect","TCP")
 Rel_U(logind, auth, "call")
 Rel_R(logind, gated, "call login_handler")
+Rel(ap, gated, "Get")
 Rel_L(gated, agent, "call login")
 Rel_U(user, gated, "connect with secret")
 Rel_L(gated, agent, "redirect to agent")
