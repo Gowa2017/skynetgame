@@ -19,6 +19,3 @@
 [submodule "3rd/luafilesystem"]
 	path = 3rd/luafilesystem
 	url = https://github.com/keplerproject/luafilesystem.git
-[submodule "3rd/luaecs"]
-	path = 3rd/luaecs
-	url = https://github.com/cloudwu/luaecs.git
