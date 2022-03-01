@@ -30,7 +30,7 @@ engine:
 go:
 	make -C skynetgo LUAINC=`pwd`/$(LUAINC)
 
-LUACLIBS=pb protobuf skiplist lfs ecs
+LUACLIBS=pb protobuf skiplist lfs
 LUACLIB_TARGET=$(patsubst %, $(LUACLIB_DIR)/%.so, $(LUACLIBS))
 
 libs: $(LUACLIB_TARGET)
