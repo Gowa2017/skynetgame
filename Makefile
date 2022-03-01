@@ -22,7 +22,7 @@ LUAINC:=$(SKYNETDIR)/3rd/lua
 CFLAGS = -g -O2 -Wall -I$(LUAINC)
 LDFLAGS = $(LIBS)
 
-all: engine go libs
+all: engine go clibs lualibs
 
 engine:
 	make -C $(SKYNETDIR) $(PLAT)
@@ -33,7 +33,10 @@ go:
 LUACLIBS=pb protobuf skiplist lfs
 LUACLIB_TARGET=$(patsubst %, $(LUACLIB_DIR)/%.so, $(LUACLIBS))
 
-libs: $(LUACLIB_TARGET)
+lualibs:
+	install 3rd/tiny-ecs/tiny.lua lualib
+
+clibs: $(LUACLIB_TARGET)
 $(LUACLIB_DIR)/pb.so: 3rd/lua-protobuf/pb.c
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ $(LDFLAGS)
 	install 3rd/lua-protobuf/protoc.lua public/proto
@@ -47,9 +50,6 @@ $(LUACLIB_DIR)/lfs.so: 3rd/luafilesystem/src/lfs.c
 	MACOSX_DEPLOYMENT_TARGET=$(MACOSX_DEPLOYMENT_TARGET)
 	export MACOSX_DEPLOYMENT_TARGET
 	$(CC) $(CFLAGS) $(SHARED) -o $@ $^ -I$(LUAINC)
-$(LUACLIB_DIR)/ecs.so: 3rd/luaecs/luaecs.c
-	$(CC) $(CFLAGS) $(SHARED) -o $@ $^ -I$(LUAINC)
-	install 3rd/luaecs/ecs.lua lualib
 clean:
 	make -C 3rd/pbc clean
 	make -C $(SKYNETDIR) clean

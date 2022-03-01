@@ -19,3 +19,6 @@
 [submodule "3rd/luafilesystem"]
 	path = 3rd/luafilesystem
 	url = https://github.com/keplerproject/luafilesystem.git
+[submodule "3rd/tiny-ecs"]
+	path = 3rd/tiny-ecs
+	url = https://github.com/bakpakin/tiny-ecs.git
